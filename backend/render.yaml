@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: lexph-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - fromDatabase:
+          name: mongodb
+          property: connectionString
+    autoDeploy: false

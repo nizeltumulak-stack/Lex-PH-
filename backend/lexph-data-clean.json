@@ -1,0 +1,75 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "case_title": "Heirs of Malabanan v. Republic of the Philippines",
+      "gr_number": "G.R. No. 179987",
+      "date_decided": "2009-09-03",
+      "ponente": "Bersamin, J.",
+      "category": "Civil",
+      "doctrine": "Under Section 14(1) of PD 1529, persons who have been in open, continuous, exclusive and notorious possession and occupation of alienable and disposable lands of the public domain under a bona fide claim of ownership since June 12, 1945, or earlier, may file a petition for judicial confirmation of title. The land must be alienable and disposable at the time of the application.",
+      "facts": "Mario Malabanan applied for original registration of a parcel of land in Silang, Cavite. He claimed open, continuous, exclusive and notorious possession since June 12, 1945. The Republic opposed on grounds that the land is part of the public domain.",
+      "issue": "Whether open, continuous, exclusive, and notorious possession since June 12, 1945 of alienable and disposable land is sufficient for judicial confirmation of title.",
+      "ruling": "The Supreme Court ruled that for an application under Section 14(1) of PD 1529, the land must be alienable and disposable at the time of filing. However, the disposability must be proved to have existed as of June 12, 1945 or earlier. The case was remanded for further proceedings.",
+      "tags": "land registration,alienable,disposable,possession,June 12 1945,public domain,judicial confirmation",
+      "is_landmark": "1",
+      "is_active": "1"
+    },
+    {
+      "id": 2,
+      "case_title": "People of the Philippines v. Cachuela",
+      "gr_number": "G.R. No. 191752",
+      "date_decided": "2013-06-26",
+      "ponente": "Brion, J.",
+      "category": "Criminal",
+      "doctrine": "In a prosecution for murder, treachery is present when the offender employs means, methods, or forms in the execution of the crime which tend directly and specially to insure its execution, without risk to himself arising from the defense which the offended party might make.",
+      "facts": "Accuseds Ronald and Raymund Cachuela were charged with murder for the stabbing death of the victim. The Information alleged the qualifying circumstance of treachery. Evidence showed that the victim was attacked from behind without warning.",
+      "issue": "Whether the killing was attended by the qualifying circumstance of treachery, thus qualifying the crime to murder.",
+      "ruling": "The Supreme Court affirmed the conviction for murder. Treachery was proven because the victim was attacked from behind, giving him no opportunity to defend himself. The attack was sudden and unexpected, ensuring execution without risk to the accused.",
+      "tags": "murder,treachery,qualifying circumstance,attack from behind,alevosia,stabbing",
+      "is_landmark": "0",
+      "is_active": "1"
+    }
+  ],
+  "laws": [
+    {
+      "id": 1,
+      "title": "Definition of Obligation",
+      "article_number": "Article 1156",
+      "content": "An obligation is a juridical necessity to give, to do, or not to do.",
+      "category": "Civil",
+      "source": "Civil Code of the Philippines (Republic Act No. 386)",
+      "ra_number": "RA 386",
+      "tags": "obligation,juridical necessity,give,do,not to do"
+    }
+  ],
+  "doctrines": [
+    {
+      "id": 1,
+      "doctrine_name": "Agabon Doctrine",
+      "description": "Where an employer dismisses an employee for a just or authorized cause but fails to comply with the procedural due process requirements (twin-notice rule), the dismissal is not rendered illegal or void. Instead, the employer is liable to pay nominal damages to the employee.",
+      "legal_basis": "Article 294, Labor Code of the Philippines; Article 2221, Civil Code of the Philippines",
+      "related_cases": "G.R. No. 158693",
+      "category": "Labor"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@lexph.local",
+      "password_hash": "$2y$12$LKJhashplaceholderChangeThis",
+      "full_name": "System Administrator",
+      "role": "admin",
+      "subscription_status": "trial"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Civil Law",
+      "slug": "civil",
+      "description": "Private rights, obligations, contracts, property, and torts"
+    }
+  ]
+}

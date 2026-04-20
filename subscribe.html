@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexPH — Upgrade to Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink-900: #1a1410;
+  --ink-800: #2d2519;
+  --ink-600: #5a4d3e;
+  --ink-400: #8a7b6a;
+  --ink-100: #e0d6c9;
+  --ink-50:  #f5f0e8;
+  --ink-20:  #faf8f3;
+  --gold-600: #9a7c3e;
+  --gold-400: #c4a055;
+  --gold-200: #e8d08a;
+  --gold-100: #f5eab8;
+  --red-500: #b83224;
+  --teal-500: #2a6b60;
+  --teal-100: #e0f0ee;
+  --bg-sidebar: #1f1a13;
+  --border: rgba(74,65,51,0.25);
+  --shadow-md: 0 4px 12px rgba(26,20,16,0.10);
+  --shadow-lg: 0 12px 32px rgba(26,20,16,0.16);
+  --serif: 'Source Serif 4', Georgia, serif;
+  --display: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --transition: 0.2s ease;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body { font-family: var(--sans); background: var(--ink-50); color: var(--ink-900); min-height: 100vh; }
+
+/* HEADER */
+.header {
+  background: var(--bg-sidebar);
+  height: 64px; display: flex; align-items: center;
+  padding: 0 24px; gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky; top: 0; z-index: 100;
+}
+.brand-seal-logo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.brand-name { font-family: var(--display); font-size: 15px; font-weight: 700; color: #f0e8d8; letter-spacing: 0.02em; }
+.brand-sub { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gold-400); font-weight: 500; }
+.header-back {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; text-decoration: none;
+  transition: all var(--transition);
+}
+.header-back:hover { background: rgba(255,255,255,0.15); color: #f0e8d8; }
+
+/* PAGE LAYOUT */
+.page-wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+
+/* PLAN SELECTOR */
+.plan-header { text-align: center; margin-bottom: 40px; }
+.plan-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold-600); font-weight: 600; margin-bottom: 10px; }
+.plan-title { font-family: var(--display); font-size: clamp(26px, 4vw, 38px); font-weight: 700; color: var(--ink-900); margin-bottom: 10px; }
+.plan-title em { font-style: italic; color: var(--gold-600); }
+.plan-subtitle { font-family: var(--serif); font-size: 15px; color: var(--ink-600); max-width: 480px; margin: 0 auto; font-weight: 300; line-height: 1.7; }
+
+.plan-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+.plan-card.otbt { border-color: rgba(139,35,24,0.3); background: linear-gradient(135deg, #fffaf8 0%, #fff5f0 100%); }
+.plan-card.otbt:hover { border-color: var(--red-500); }
+.plan-card.otbt.selected { border-color: var(--red-500); box-shadow: 0 0 0 3px rgba(184,50,36,0.13); }
+.plan-card.otbt .plan-badge { background: var(--red-500); }
+.plan-card.otbt.selected .plan-radio { background: var(--red-500); border-color: var(--red-500); }
+.plan-card.otbt .plan-price { color: var(--red-500); }
+.plan-card.otbt .plan-features li::before { color: var(--red-500); }
+.timer-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(184,50,36,0.1); color: var(--red-500);
+  border: 1px solid rgba(184,50,36,0.25);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.plan-card {
+  background: #fff; border: 2px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px 24px;
+  cursor: pointer; transition: all var(--transition);
+  position: relative;
+}
+.plan-card:hover { border-color: var(--gold-400); box-shadow: var(--shadow-md); }
+.plan-card.selected { border-color: var(--gold-600); box-shadow: 0 0 0 3px rgba(154,124,62,0.15); }
+.plan-card.selected .plan-radio { background: var(--gold-600); border-color: var(--gold-600); }
+.plan-card.selected .plan-radio::after { opacity: 1; }
+.plan-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--gold-600); color: white;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 3px 12px; border-radius: 20px; white-space: nowrap;
+}
+.plan-radio {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--ink-400); margin-bottom: 14px;
+  position: relative; transition: all var(--transition);
+}
+.plan-radio::after {
+  content: ''; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 7px; height: 7px; border-radius: 50%;
+  background: white; opacity: 0; transition: opacity var(--transition);
+}
+.plan-name { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-600); margin-bottom: 4px; }
+.plan-price { font-family: var(--display); font-size: 32px; font-weight: 700; color: var(--ink-900); line-height: 1; margin-bottom: 4px; }
+.plan-price span { font-size: 14px; font-weight: 400; color: var(--ink-400); font-family: var(--sans); }
+.plan-desc { font-size: 13px; color: var(--ink-600); margin-bottom: 16px; font-family: var(--serif); font-style: italic; }
+.plan-features { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+.plan-features li { font-size: 13px; color: var(--ink-600); display: flex; align-items: flex-start; gap: 8px; }
+.plan-features li::before { content: '✓'; color: var(--teal-500); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+/* DIVIDER */
+.section-divider { display: flex; align-items: center; gap: 16px; margin: 32px 0 28px; }
+.section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-400); font-weight: 600; white-space: nowrap; }
+
+/* FORM CARD */
+.form-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; box-shadow: var(--shadow-md); margin-bottom: 24px; }
+.form-card-title { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--ink-900); margin-bottom: 4px; }
+.form-card-sub { font-size: 13px; color: var(--ink-400); margin-bottom: 24px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+label { font-size: 11px; font-weight: 600; color: var(--ink-600); text-transform: uppercase; letter-spacing: 0.08em; }
+label .req { color: var(--red-500); margin-left: 2px; }
+input, select, textarea {
+  padding: 11px 13px;
+  border: 1px solid rgba(90,77,62,0.25);
+  border-radius: 6px; font-size: 14px;
+  font-family: var(--sans); color: var(--ink-900);
+  background: var(--ink-20);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--gold-600);
+  box-shadow: 0 0 0 3px rgba(154,124,62,0.12);
+  background: #fff;
+}
+textarea { resize: vertical; min-height: 80px; }
+select { cursor: pointer; }
+.input-hint { font-size: 11px; color: var(--ink-400); margin-top: 2px; }
+
+/* PAYMENT METHOD TABS */
+.payment-tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+.pay-tab {
+  padding: 10px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--ink-20);
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  color: var(--ink-600); transition: all var(--transition);
+  display: flex; align-items: center; gap: 8px;
+}
+.pay-tab:hover { border-color: var(--gold-400); color: var(--ink-900); }
+.pay-tab.active { border-color: var(--gold-600); background: #fff; color: var(--ink-900); box-shadow: 0 0 0 3px rgba(154,124,62,0.12); }
+.pay-tab .tab-icon { font-size: 18px; }
+
+.pay-panel { display: none; }
+.pay-panel.active { display: block; }
+
+.pay-info-box {
+  background: var(--teal-100); border: 1px solid rgba(42,107,96,0.25);
+  border-radius: var(--radius-md); padding: 14px 16px;
+  font-size: 13px; color: #1a4a42; margin-bottom: 18px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.pay-info-box strong { display: block; margin-bottom: 2px; font-size: 13px; }
+
+.account-box {
+  background: var(--ink-50); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px;
+  margin-bottom: 18px;
+}
+.account-box-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.account-box-row:last-child { border-bottom: none; padding-bottom: 0; }
+.account-box-label { font-size: 12px; color: var(--ink-400); font-weight: 500; }
+.account-box-value { font-size: 14px; font-weight: 600; color: var(--ink-900); font-family: var(--serif); }
+.copy-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  padding: 3px 8px; font-size: 11px; cursor: pointer; color: var(--ink-600);
+  transition: all var(--transition); margin-left: 8px;
+}
+.copy-btn:hover { background: var(--gold-100); border-color: var(--gold-400); }
+
+/* ORDER SUMMARY */
+.order-summary {
+  background: var(--bg-sidebar); color: #f0e8d8;
+  border-radius: var(--radius-lg); padding: 24px;
+  margin-bottom: 24px;
+}
+.order-summary-title { font-family: var(--display); font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--gold-400); }
+.order-row { display: flex; justify-content: space-between; font-size: 14px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.order-row:last-child { border-bottom: none; }
+.order-row.total { font-size: 16px; font-weight: 700; color: var(--gold-200); padding-top: 12px; }
+.order-row .muted { color: rgba(255,255,255,0.45); font-size: 12px; }
+
+/* TERMS */
+.terms-check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--ink-600); margin-bottom: 20px; }
+.terms-check input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: var(--gold-600); }
+.terms-check a { color: var(--gold-600); text-decoration: none; }
+.terms-check a:hover { text-decoration: underline; }
+
+/* SUBMIT */
+.btn-submit {
+  width: 100%; padding: 15px;
+  background: var(--gold-600); color: white;
+  border: none; border-radius: var(--radius-md);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  font-family: var(--sans);
+  transition: background var(--transition), transform 0.1s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-submit:hover { background: #7a5c2e; }
+.btn-submit:active { transform: scale(0.99); }
+.btn-submit:disabled { background: var(--ink-400); cursor: not-allowed; }
+
+/* SUCCESS OVERLAY */
+.success-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,20,16,0.7); z-index: 999;
+  align-items: center; justify-content: center;
+}
+.success-overlay.show { display: flex; }
+.success-card {
+  background: #fff; border-radius: var(--radius-lg);
+  padding: 48px 40px; max-width: 420px; width: 90%;
+  text-align: center; box-shadow: var(--shadow-lg);
+  animation: popIn 0.3s ease;
+}
+@keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.success-icon { font-size: 48px; margin-bottom: 16px; }
+.success-title { font-family: var(--display); font-size: 24px; font-weight: 700; color: var(--ink-900); margin-bottom: 8px; }
+.success-msg { font-family: var(--serif); font-size: 15px; color: var(--ink-600); line-height: 1.7; margin-bottom: 24px; }
+.success-ref { background: var(--ink-50); border-radius: var(--radius-md); padding: 12px 16px; font-size: 13px; color: var(--ink-600); margin-bottom: 24px; }
+.success-ref strong { color: var(--ink-900); font-size: 15px; letter-spacing: 0.05em; }
+.btn-home { display: inline-block; padding: 12px 28px; background: var(--gold-600); color: white; border-radius: var(--radius-md); font-size: 14px; font-weight: 700; text-decoration: none; letter-spacing: 0.06em; text-transform: uppercase; transition: background var(--transition); }
+.btn-home:hover { background: #7a5c2e; }
+
+/* ERROR */
+.form-error { background: #fce8e5; color: var(--red-500); padding: 12px 16px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 16px; display: none; }
+.form-error.show { display: block; }
+
+/* RESPONSIVE */
+@media (max-width: 640px) {
+  .plan-cards { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid.three { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: auto; }
+  .page-wrap { padding: 24px 16px 60px; }
+  .form-card { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <img src="lexph logo.svg" alt="LexPH Logo" class="brand-seal-logo"/>
+  <div>
+    <div class="brand-name">LexPH</div>
+    <div class="brand-sub">Philippine Law Research</div>
+  </div>
+  <a href="index.html" class="header-back">← Back to Home</a>
+</header>
+
+<!-- SUCCESS OVERLAY -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-card">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">Subscription Submitted!</div>
+    <div class="success-msg">Your payment is being verified. We'll activate your Pro account within <strong>1–24 hours</strong> after confirmation.</div>
+    <div class="success-ref">
+      Reference No.: <br><strong id="refNumber">—</strong>
+    </div>
+    <a href="index.html" class="btn-home">Go to Home</a>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- PLAN HEADER -->
+  <div class="plan-header">
+    <div class="plan-eyebrow">Upgrade Your Access</div>
+    <h1 class="plan-title">Choose Your <em>LexPH Pro</em> Plan</h1>
+    <p class="plan-subtitle">Full access to Philippine case law, statutes, legal doctrines and AI-powered research tools.</p>
+  </div>
+
+  <!-- PLAN CARDS -->
+  <div class="plan-cards">
+    <div class="plan-card selected" id="planMonthly" onclick="selectPlan('monthly')">
+      <div class="plan-radio" id="radioMonthly"></div>
+      <div class="plan-name">Monthly</div>
+      <div class="plan-price">₱199 <span>/ month</span></div>
+      <div class="plan-desc">Flexible, cancel anytime</div>
+      <ul class="plan-features">
+        <li>Unlimited case law searches</li>
+        <li>Full statute & law library</li>
+        <li>AI-powered legal summaries</li>
+        <li>Doctrine explorer</li>
+        <li>Bookmark & export cases</li>
+      </ul>
+    </div>
+    <div class="plan-card" id="planAnnual" onclick="selectPlan('annual')">
+      <div class="plan-badge">Save 33%</div>
+      <div class="plan-radio" id="radioAnnual"></div>
+      <div class="plan-name">Annual</div>
+      <div class="plan-price">₱1,590 <span>/ year</span></div>
+      <div class="plan-desc">Best value — ₱132.50/mo</div>
+      <ul class="plan-features">
+        <li>Everything in Monthly</li>
+        <li>Priority email support</li>
+        <li>Early access to new features</li>
+        <li>Downloadable case digests (PDF)</li>
+        <li>Advanced search filters</li>
+      </ul>
+    </div>
+    <div class="plan-card otbt" id="planOtbt" onclick="selectPlan('otbt')">
+      <div class="plan-badge">One Time</div>
+      <div class="plan-radio" id="radioOtbt"></div>
+      <div class="timer-badge">⏱ 72-Hour Access</div>
+      <div class="plan-name">One Time Big Time</div>
+      <div class="plan-price">₱699 <span>/ 72 hrs</span></div>
+      <div class="plan-desc">Pay once, use everything — no commitment</div>
+      <ul class="plan-features">
+        <li>Full access for 72 hours straight</li>
+        <li>Unlimited case law searches</li>
+        <li>Full statute & law library</li>
+        <li>AI-powered legal summaries</li>
+        <li>Doctrine explorer</li>
+        <li>Bookmark & export cases</li>
+        <li>No recurring charges</li>
+      </ul>
+    </div>
+  </div>
+  <div class="section-divider"><span class="section-label">① Personal Information</span></div>
+  <div class="form-card">
+    <div class="form-card-title">Your Details</div>
+    <div class="form-card-sub">Please provide accurate information for billing and account verification.</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>First Name <span class="req">*</span></label>
+        <input type="text" id="firstName" placeholder="Juan" autocomplete="given-name">
+      </div>
+      <div class="form-group">
+        <label>Last Name <span class="req">*</span></label>
+        <input type="text" id="lastName" placeholder="dela Cruz" autocomplete="family-name">
+      </div>
+      <div class="form-group">
+        <label>Email Address <span class="req">*</span></label>
+        <input type="email" id="emailAddr" placeholder="juan@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Mobile Number <span class="req">*</span></label>
+        <input type="tel" id="mobileNum" placeholder="09XX XXX XXXX" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>Profession / Role</label>
+        <select id="profession">
+          <option value="">Select your role</option>
+          <option>Lawyer / Attorney</option>
+          <option>Law Student</option>
+          <option>Paralegal</option>
+          <option>Judge / Court Personnel</option>
+          <option>Government Employee</option>
+          <option>Researcher / Academic</option>
+          <option>Business Owner</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Organization / School <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink-400)">(optional)</span></label>
+        <input type="text" id="organization" placeholder="e.g. UP College of Law">
+      </div>
+      <div class="form-group full">
+        <label>Complete Address <span class="req">*</span></label>
+        <input type="text" id="address" placeholder="Street, Barangay, City, Province" autocomplete="street-address">
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT METHOD -->
+  <div class="section-divider"><span class="section-label">② Payment Method</span></div>
+  <div class="form-card">
+    <div class="form-card-title">Choose How to Pay</div>
+    <div class="form-card-sub">Select your preferred payment channel below.</div>
+
+    <div class="payment-tabs">
+      <div class="pay-tab active" onclick="selectPayment('gcash')" id="tab-gcash">
+        <span class="tab-icon">📱</span> GCash
+      </div>
+      <div class="pay-tab" onclick="selectPayment('maya')" id="tab-maya">
+        <span class="tab-icon">💜</span> PayMaya
+      </div>
+      <div class="pay-tab" onclick="selectPayment('bank')" id="tab-bank">
+        <span class="tab-icon">🏦</span> Bank Transfer
+      </div>
+      <div class="pay-tab" onclick="selectPayment('padala')" id="tab-padala">
+        <span class="tab-icon">📦</span> Cash Padala
+      </div>
+    </div>
+
+    <!-- GCASH -->
+    <div class="pay-panel active" id="panel-gcash">
+      <div class="pay-info-box">
+        <span>ℹ️</span>
+        <div>
+          <strong>GCash Instructions</strong>
+          Send payment to the number below, then fill in your GCash transaction details.
+        </div>
+      </div>
+      <div class="account-box">
+        <div class="account-box-row">
+          <span class="account-box-label">GCash Number</span>
+          <span class="account-box-value">0917 123 4567 <button class="copy-btn" onclick="copyText('0917 123 4567')">Copy</button></span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Account Name</span>
+          <span class="account-box-value">LexPH Legal Tech Inc.</span>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>GCash Reference No. <span class="req">*</span></label>
+          <input type="text" id="gcashRef" placeholder="e.g. 1234 5678 9012">
+          <span class="input-hint">Found in your GCash transaction history</span>
+        </div>
+        <div class="form-group">
+          <label>GCash Mobile Number Used <span class="req">*</span></label>
+          <input type="tel" id="gcashNum" placeholder="09XX XXX XXXX">
+        </div>
+        <div class="form-group">
+          <label>Date & Time of Payment <span class="req">*</span></label>
+          <input type="datetime-local" id="gcashDate">
+        </div>
+        <div class="form-group">
+          <label>Amount Sent (₱) <span class="req">*</span></label>
+          <input type="number" id="gcashAmt" placeholder="199" min="1">
+        </div>
+        <div class="form-group full">
+          <label>Upload Screenshot <span class="req">*</span></label>
+          <input type="file" id="gcashProof" accept="image/*,.pdf">
+          <span class="input-hint">GCash receipt screenshot (JPG, PNG or PDF, max 5MB)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMAYA -->
+    <div class="pay-panel" id="panel-maya">
+      <div class="pay-info-box">
+        <span>ℹ️</span>
+        <div>
+          <strong>PayMaya Instructions</strong>
+          Send payment via PayMaya to the details below, then enter your transaction reference.
+        </div>
+      </div>
+      <div class="account-box">
+        <div class="account-box-row">
+          <span class="account-box-label">PayMaya Number</span>
+          <span class="account-box-value">0998 765 4321 <button class="copy-btn" onclick="copyText('0998 765 4321')">Copy</button></span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Account Name</span>
+          <span class="account-box-value">LexPH Legal Tech Inc.</span>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>PayMaya Reference No. <span class="req">*</span></label>
+          <input type="text" id="mayaRef" placeholder="e.g. PM-1234567890">
+        </div>
+        <div class="form-group">
+          <label>PayMaya Account Used <span class="req">*</span></label>
+          <input type="tel" id="mayaNum" placeholder="09XX XXX XXXX">
+        </div>
+        <div class="form-group">
+          <label>Date & Time of Payment <span class="req">*</span></label>
+          <input type="datetime-local" id="mayaDate">
+        </div>
+        <div class="form-group">
+          <label>Amount Sent (₱) <span class="req">*</span></label>
+          <input type="number" id="mayaAmt" placeholder="199" min="1">
+        </div>
+        <div class="form-group full">
+          <label>Upload Screenshot <span class="req">*</span></label>
+          <input type="file" id="mayaProof" accept="image/*,.pdf">
+          <span class="input-hint">PayMaya receipt screenshot (JPG, PNG or PDF, max 5MB)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANK TRANSFER -->
+    <div class="pay-panel" id="panel-bank">
+      <div class="pay-info-box">
+        <span>ℹ️</span>
+        <div>
+          <strong>Bank Transfer Instructions</strong>
+          Transfer to any of our bank accounts below and submit your deposit slip or transfer confirmation.
+        </div>
+      </div>
+      <div class="account-box">
+        <div class="account-box-row">
+          <span class="account-box-label">Bank</span>
+          <span class="account-box-value">BDO Unibank</span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Account Number</span>
+          <span class="account-box-value">0123 4567 8901 <button class="copy-btn" onclick="copyText('0123 4567 8901')">Copy</button></span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Account Name</span>
+          <span class="account-box-value">LexPH Legal Tech Inc.</span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Branch</span>
+          <span class="account-box-value">Makati City Main Branch</span>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-400);margin-bottom:16px;">
+        Also accepts: <strong>BPI, UnionBank, Metrobank, Land Bank</strong> — contact us at <a href="mailto:billing@lexph.com" style="color:var(--gold-600)">billing@lexph.com</a> for other bank details.
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Bank Name <span class="req">*</span></label>
+          <select id="bankName">
+            <option value="">Select bank</option>
+            <option>BDO Unibank</option>
+            <option>BPI</option>
+            <option>UnionBank</option>
+            <option>Metrobank</option>
+            <option>Land Bank</option>
+            <option>PNB</option>
+            <option>Security Bank</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sender Account Name <span class="req">*</span></label>
+          <input type="text" id="bankSender" placeholder="Name on your bank account">
+        </div>
+        <div class="form-group">
+          <label>Transfer / Confirmation No. <span class="req">*</span></label>
+          <input type="text" id="bankRef" placeholder="e.g. TXN-20240420-001">
+        </div>
+        <div class="form-group">
+          <label>Date of Transfer <span class="req">*</span></label>
+          <input type="date" id="bankDate">
+        </div>
+        <div class="form-group">
+          <label>Amount Transferred (₱) <span class="req">*</span></label>
+          <input type="number" id="bankAmt" placeholder="199" min="1">
+        </div>
+        <div class="form-group full">
+          <label>Upload Deposit Slip / Screenshot <span class="req">*</span></label>
+          <input type="file" id="bankProof" accept="image/*,.pdf">
+          <span class="input-hint">Clear photo or scan of deposit slip or online transfer confirmation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CASH PADALA -->
+    <div class="pay-panel" id="panel-padala">
+      <div class="pay-info-box">
+        <span>ℹ️</span>
+        <div>
+          <strong>Cash Padala Instructions</strong>
+          Send via M Lhuillier, Cebuana Lhuillier, LBC, or Palawan Express and fill in the claim details below.
+        </div>
+      </div>
+      <div class="account-box">
+        <div class="account-box-row">
+          <span class="account-box-label">Recipient Name</span>
+          <span class="account-box-value">Juan Pablo Santos</span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Mobile (for pickup)</span>
+          <span class="account-box-value">0917 123 4567 <button class="copy-btn" onclick="copyText('0917 123 4567')">Copy</button></span>
+        </div>
+        <div class="account-box-row">
+          <span class="account-box-label">Location</span>
+          <span class="account-box-value">Makati City, Metro Manila</span>
+        </div>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Remittance Center <span class="req">*</span></label>
+          <select id="padalaCenter">
+            <option value="">Select remittance center</option>
+            <option>M Lhuillier</option>
+            <option>Cebuana Lhuillier</option>
+            <option>LBC</option>
+            <option>Palawan Express</option>
+            <option>Western Union</option>
+            <option>5-Star / Expresspay</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Sender's Full Name <span class="req">*</span></label>
+          <input type="text" id="padalaSender" placeholder="Your full name as on receipt">
+        </div>
+        <div class="form-group">
+          <label>Control / Reference No. <span class="req">*</span></label>
+          <input type="text" id="padalaRef" placeholder="e.g. ML-1234567">
+          <span class="input-hint">Found on your remittance receipt</span>
+        </div>
+        <div class="form-group">
+          <label>Date Sent <span class="req">*</span></label>
+          <input type="date" id="padalaDate">
+        </div>
+        <div class="form-group">
+          <label>Amount Sent (₱) <span class="req">*</span></label>
+          <input type="number" id="padalaAmt" placeholder="199" min="1">
+        </div>
+        <div class="form-group">
+          <label>Branch / Location Sent From <span class="req">*</span></label>
+          <input type="text" id="padalaBranch" placeholder="e.g. M Lhuillier Cebu IT Park">
+        </div>
+        <div class="form-group full">
+          <label>Upload Receipt Photo <span class="req">*</span></label>
+          <input type="file" id="padalaProof" accept="image/*,.pdf">
+          <span class="input-hint">Clear photo of remittance receipt (JPG, PNG or PDF)</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /form-card -->
+
+  <!-- NOTES -->
+  <div class="form-card">
+    <div class="form-card-title">Additional Notes</div>
+    <div class="form-card-sub">Anything else we should know about your subscription or payment.</div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--ink-400)">(optional)</span></label>
+      <textarea id="notes" placeholder="e.g. Payment sent from a different name, special requests, etc."></textarea>
+    </div>
+  </div>
+
+  <!-- ORDER SUMMARY -->
+  <div class="section-divider"><span class="section-label">③ Review & Submit</span></div>
+  <div class="order-summary">
+    <div class="order-summary-title">Order Summary</div>
+    <div class="order-row"><span>Plan</span><span id="summaryPlan">LexPH Pro — Monthly</span></div>
+    <div class="order-row"><span>Billing</span><span id="summaryBilling">₱199 / month</span></div>
+    <div class="order-row"><span>Payment Method</span><span id="summaryPayment">GCash</span></div>
+    <div class="order-row"><span class="muted">VAT Inclusive</span><span class="muted">No additional tax</span></div>
+    <div class="order-row total"><span>Total Due</span><span id="summaryTotal">₱199.00</span></div>
+  </div>
+
+  <!-- TERMS -->
+  <div class="terms-check">
+    <input type="checkbox" id="agreeTerms">
+    <label for="agreeTerms" style="text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;">
+      I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>. I understand my subscription will be activated within 1–24 hours after payment verification.
+    </label>
+  </div>
+
+  <!-- ERROR -->
+  <div class="form-error" id="formError"></div>
+
+  <!-- SUBMIT -->
+  <button class="btn-submit" id="submitBtn" onclick="submitSubscription()">
+    <span>🔒</span> Submit Subscription
+  </button>
+
+</div><!-- /page-wrap -->
+
+<script>
+let selectedPlan = 'monthly';
+let selectedPayment = 'gcash';
+
+// Pre-fill from localStorage user
+window.addEventListener('DOMContentLoaded', () => {
+  const stored = localStorage.getItem('lexph_user');
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      if (user.email) document.getElementById('emailAddr').value = user.email;
+      if (user.username) {
+        const parts = user.username.split(' ');
+        if (parts.length >= 2) {
+          document.getElementById('firstName').value = parts[0];
+          document.getElementById('lastName').value = parts.slice(1).join(' ');
+        } else {
+          document.getElementById('firstName').value = user.username;
+        }
+      }
+      if (user.full_name && user.full_name !== user.username) {
+        const parts = user.full_name.split(' ');
+        document.getElementById('firstName').value = parts[0] || '';
+        document.getElementById('lastName').value = parts.slice(1).join(' ') || '';
+      }
+    } catch(e) {}
+  }
+});
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  document.getElementById('planMonthly').classList.toggle('selected', plan === 'monthly');
+  document.getElementById('planAnnual').classList.toggle('selected', plan === 'annual');
+  document.getElementById('planOtbt').classList.toggle('selected', plan === 'otbt');
+  updateSummary();
+}
+
+function selectPayment(method) {
+  selectedPayment = method;
+  document.querySelectorAll('.pay-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.pay-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + method).classList.add('active');
+  document.getElementById('panel-' + method).classList.add('active');
+  updateSummary();
+}
+
+function updateSummary() {
+  const planLabels = { monthly: 'LexPH Pro — Monthly', annual: 'LexPH Pro — Annual', otbt: 'One Time Big Time — 72 Hours' };
+  const planBilling = { monthly: '₱199 / month', annual: '₱1,590 / year', otbt: '₱699 one-time (72 hrs)' };
+  const planTotal = { monthly: '₱199.00', annual: '₱1,590.00', otbt: '₱699.00' };
+  const payLabels = { gcash: 'GCash', maya: 'PayMaya', bank: 'Bank Transfer', padala: 'Cash Padala' };
+  document.getElementById('summaryPlan').textContent = planLabels[selectedPlan];
+  document.getElementById('summaryBilling').textContent = planBilling[selectedPlan];
+  document.getElementById('summaryPayment').textContent = payLabels[selectedPayment];
+  document.getElementById('summaryTotal').textContent = planTotal[selectedPlan];
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    showToastLocal('Copied!');
+  }).catch(() => {
+    const el = document.createElement('textarea');
+    el.value = text; document.body.appendChild(el);
+    el.select(); document.execCommand('copy');
+    document.body.removeChild(el);
+    showToastLocal('Copied!');
+  });
+}
+
+function showToastLocal(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1f1a13;color:#f0e8d8;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.25);';
+  t.textContent = msg; document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+function showError(msg) {
+  const el = document.getElementById('formError');
+  el.textContent = msg; el.classList.add('show');
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function clearError() { document.getElementById('formError').classList.remove('show'); }
+
+function getVal(id) { return document.getElementById(id)?.value.trim() || ''; }
+
+function submitSubscription() {
+  clearError();
+
+  // Validate personal info
+  if (!getVal('firstName')) return showError('Please enter your first name.');
+  if (!getVal('lastName')) return showError('Please enter your last name.');
+  if (!getVal('emailAddr')) return showError('Please enter your email address.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(getVal('emailAddr'))) return showError('Please enter a valid email address.');
+  if (!getVal('mobileNum')) return showError('Please enter your mobile number.');
+  if (!/^(09|\+639)\d{9}$/.test(getVal('mobileNum').replace(/\s/g,''))) return showError('Please enter a valid PH mobile number (e.g. 09XX XXX XXXX).');
+  if (!getVal('address')) return showError('Please enter your complete address.');
+
+  // Validate payment fields
+  if (selectedPayment === 'gcash') {
+    if (!getVal('gcashRef')) return showError('Please enter your GCash reference number.');
+    if (!getVal('gcashNum')) return showError('Please enter the GCash number used.');
+    if (!getVal('gcashDate')) return showError('Please enter the date and time of payment.');
+    if (!getVal('gcashAmt')) return showError('Please enter the amount sent.');
+    if (!document.getElementById('gcashProof').files.length) return showError('Please upload your GCash screenshot.');
+  } else if (selectedPayment === 'maya') {
+    if (!getVal('mayaRef')) return showError('Please enter your PayMaya reference number.');
+    if (!getVal('mayaNum')) return showError('Please enter the PayMaya account used.');
+    if (!getVal('mayaDate')) return showError('Please enter the date and time of payment.');
+    if (!getVal('mayaAmt')) return showError('Please enter the amount sent.');
+    if (!document.getElementById('mayaProof').files.length) return showError('Please upload your PayMaya screenshot.');
+  } else if (selectedPayment === 'bank') {
+    if (!getVal('bankName')) return showError('Please select your bank.');
+    if (!getVal('bankSender')) return showError('Please enter the sender account name.');
+    if (!getVal('bankRef')) return showError('Please enter the transfer confirmation number.');
+    if (!getVal('bankDate')) return showError('Please enter the date of transfer.');
+    if (!getVal('bankAmt')) return showError('Please enter the amount transferred.');
+    if (!document.getElementById('bankProof').files.length) return showError('Please upload your deposit slip or screenshot.');
+  } else if (selectedPayment === 'padala') {
+    if (!getVal('padalaCenter')) return showError('Please select the remittance center.');
+    if (!getVal('padalaSender')) return showError('Please enter the sender full name.');
+    if (!getVal('padalaRef')) return showError('Please enter the control/reference number.');
+    if (!getVal('padalaDate')) return showError('Please enter the date sent.');
+    if (!getVal('padalaAmt')) return showError('Please enter the amount sent.');
+    if (!getVal('padalaBranch')) return showError('Please enter the branch/location.');
+    if (!document.getElementById('padalaProof').files.length) return showError('Please upload your receipt photo.');
+  }
+
+  if (!document.getElementById('agreeTerms').checked) return showError('Please agree to the Terms of Service and Privacy Policy.');
+
+  // Generate reference number
+  const ref = 'LXPH-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+
+  // Save to localStorage
+  const subData = {
+    ref, plan: selectedPlan, payment: selectedPayment,
+    name: getVal('firstName') + ' ' + getVal('lastName'),
+    email: getVal('emailAddr'), mobile: getVal('mobileNum'),
+    address: getVal('address'), profession: getVal('profession'),
+    organization: getVal('organization'), notes: getVal('notes'),
+    submittedAt: new Date().toISOString(), status: 'pending'
+  };
+  localStorage.setItem('lexph_subscription', JSON.stringify(subData));
+
+  // Update user role to 'pending_pro'
+  const stored = localStorage.getItem('lexph_user');
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      user.subscription_status = 'pending';
+      user.subscription_ref = ref;
+      localStorage.setItem('lexph_user', JSON.stringify(user));
+    } catch(e) {}
+  }
+
+  // Disable button, show success
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('refNumber').textContent = ref;
+  document.getElementById('successOverlay').classList.add('show');
+}
+</script>
+</body>
+</html>

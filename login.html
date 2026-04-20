@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LexPH Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; background: linear-gradient(135deg, #faf8f3 0%, #f5f0e8 100%); min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; }
+    .login-container { background: white; padding: 48px; border-radius: 16px; box-shadow: 0 20px 40px rgba(26,20,16,0.12); width: 100%; max-width: 400px; }
+    .logo { text-align: center; margin-bottom: 32px; }
+    .logo img { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 12px; }
+    .logo h1 { color: #1a1410; font-size: 28px; font-weight: 600; margin: 0; }
+    .logo p { color: #6f5f52; font-size: 14px; margin: 4px 0 0; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: #3e3428; margin-bottom: 6px; }
+    input { width: 100%; padding: 14px 16px; border: 1.5px solid #e0d6c9; border-radius: 8px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s; }
+    input:focus { outline: none; border-color: #9a7c3e; }
+    .btn-login { width: 100%; padding: 14px; background: #9a7c3e; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+    .btn-login:hover { background: #8b6f36; }
+    .links { text-align: center; margin-top: 24px; }
+    .links a { color: #9a7c3e; text-decoration: none; font-weight: 500; }
+    .links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <img src="lexph logo.svg" alt="LexPH" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMzAiIGZpbGw9IiM5YTdjM2UiLz4KPHRleHQgeD0iMzAiIHk9IjM1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5MPC90ZXh0Pgo8L3N2Zz4K'"/>
+      <h1>LexPH</h1>
+      <p>Philippine Legal Research</p>
+    </div>
+    <form onsubmit="handleLogin(event); return false;">
+      <div class="form-group">
+        <label for="username">Username or Email</label>
+        <input type="text" id="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="btn-login">Sign In</button>
+    </form>
+    <div class="links">
+      <a href="register.html">Create Account</a> | <a href="user-home.html">Demo Home</a>
+    </div>
+  </div>
+  <script>
+    function handleLogin(event) {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      if (username && password) {
+        localStorage.setItem('lexph_user', username);
+        alert('Logged in as ' + username + '! Redirecting...');
+        window.location.href = 'user-home.html';
+      }
+    }
+  </script>
+</body>
+</html>

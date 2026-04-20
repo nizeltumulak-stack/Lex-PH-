@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LexPH Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'DM Sans', sans-serif; background: #f5f2ed; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+.login-card { background: #faf9f8; padding: 32px; border-radius: 12px; box-shadow: 0 12px 32px rgba(26,20,16,0.22); width: 100%; max-width: 340px; }
+.logo { text-align: center; margin-bottom: 20px; }
+.logo img { width: 48px; height: 48px; object-fit: contain; }
+h1 { font-size: 22px; color: #1a1410; margin-bottom: 8px; text-align: center; }
+.subtitle { color: #4a4133; font-size: 13px; text-align: center; margin-bottom: 24px; }
+.form-group { margin-bottom: 18px; }
+label { display: block; font-size: 11px; font-weight: 600; color: #4a4133; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+input { width: 100%; padding: 12px; border: 1px solid rgba(90,77,62,0.25); border-radius: 6px; font-size: 15px; box-sizing: border-box; }
+input:focus { outline: none; border-color: #9a7c3e; }
+.btn { width: 100%; padding: 12px; background: #9a7c3e; color: white; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+.btn:hover { background: #7a5c2e; }
+.btn-close { background: #e8e3d8; color: #5a4d3e; margin: 0; padding: 10px 20px; width: auto; }
+.btn-close:hover { background: #d8d3c8; }
+.links { text-align: center; margin-top: 16px; }
+.links a { color: #9a7c3e; text-decoration: none; font-size: 13px; }
+.error { background: #fce8e5; color: #b83224; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+.success { background: #e0f0ee; color: #2a6b60; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="logo">
+    <img src="lexph logo.svg" alt="LexPH" />
+  </div>
+  <h1>Sign In</h1>
+  <div class="subtitle">Access your LexPH account</div>
+  
+  <form id="loginForm" onsubmit="handleLogin(event); return false;">
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" required autocomplete="username" placeholder="Username or email">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div style="position:relative">
+        <input type="password" id="password" required autocomplete="current-password" placeholder="Enter password" style="padding-right:44px">
+        <button type="button" onclick="togglePw('password','eyeLogin')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8a7b6a;font-size:16px;padding:0;line-height:1" id="eyeLogin">👁</button>
+      </div>
+    </div>
+    <button type="submit" class="btn" id="loginBtn">Sign In</button>
+  </form>
+  
+  <button class="btn-close" onclick="window.location.href='index.html'">Close</button>
+  
+  <div class="links">
+    <a href="subscribe.html" style="color:#9a7c3e;text-decoration:none;font-size:13px;">Subscribe Pro ₱199/mo</a>
+  </div>
+</body>
+<script>
+function togglePw(inputId, btnId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const usernameInput = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
+
+  // 1. Check lexph_accounts (new system — has password)
+  const accounts = JSON.parse(localStorage.getItem('lexph_accounts') || '[]');
+  let user = accounts.find(u =>
+    (u.username === usernameInput || u.email === usernameInput) &&
+    u.password === password
+  );
+
+  // 2. Check legacy lexph_user saved without password — match username/email only,
+  //    then verify by re-registering (prompt) OR accept if no password was ever stored
+  if (!user) {
+    try {
+      const legacy = JSON.parse(localStorage.getItem('lexph_user') || 'null');
+      if (legacy && !legacy._legacyMigrated &&
+          (legacy.username === usernameInput || legacy.email === usernameInput)) {
+        // Migrate: save into accounts with the password they just typed
+        legacy.password = password;
+        legacy._legacyMigrated = true;
+        accounts.push(legacy);
+        localStorage.setItem('lexph_accounts', JSON.stringify(accounts));
+        user = legacy;
+      }
+    } catch(e) {}
+  }
+
+  // 3. Built-in demo/admin accounts
+  if (!user) {
+    const demoUsers = [
+      {username: 'admin', password: 'admin123', role: 'admin', full_name: 'Admin', email: 'admin@lexph.com'},
+      {username: 'nizel', password: 'password', role: 'user', full_name: 'Nizel Tumulak', email: 'nizel@lexph.com'}
+    ];
+    user = demoUsers.find(u =>
+      (u.username === usernameInput || u.email === usernameInput) &&
+      u.password === password
+    );
+  }
+  
+  if (user) {
+    localStorage.setItem('lexph_user', JSON.stringify({
+      username: user.username,
+      email: user.email || '',
+      role: user.role,
+      full_name: user.full_name
+    }));
+    // Show success
+    const successDiv = document.createElement('div');
+    successDiv.className = 'success';
+    successDiv.textContent = 'Login successful!';
+    document.getElementById('loginForm').insertAdjacentElement('beforebegin', successDiv);
+    
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 1000);
+    return;
+  }
+  
+  // Error
+  const existing = document.querySelector('.error');
+  if (existing) existing.remove();
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error';
+  errorDiv.textContent = 'Invalid credentials. Try your username or email address.';
+  document.getElementById('loginForm').insertAdjacentElement('beforebegin', errorDiv);
+  
+  btn.textContent = 'Sign In';
+  btn.disabled = false;
+}
+</script>
+</html>
+

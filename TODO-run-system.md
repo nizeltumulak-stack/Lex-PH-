@@ -1,0 +1,1 @@
+- [x] 5. cd backend && npm run dev\n- [ ] 6. Fix MongoDB Atlas (whitelist IP 0.0.0.0/0, check user/pass/cluster active)

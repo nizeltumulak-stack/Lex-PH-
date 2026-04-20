@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LexPH Login - Demo</title>
+<style>
+body { font-family: 'DM Sans', sans-serif; background: #faf8f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.login-form { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 12px 32px rgba(26,20,16,0.14); width: 100%; max-width: 360px; }
+h2 { text-align: center; margin-bottom: 24px; color: #1a1410; }
+input { width: 100%; padding: 12px; margin-bottom: 16px; border: 1px solid #d4d4d4; border-radius: 6px; box-sizing: border-box; }
+.btn { width: 100%; padding: 12px; background: #9a7c3e; color: white; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="login-form">
+  <h2>Login (Demo)</h2>
+  <p style="text-align: center; color: #666; font-size: 14px;">Demo mode - no backend.</p>
+  <input placeholder="Username" />
+  <input type="password" placeholder="Password" />
+  <button class="btn" onclick="alert('Logged in as demo user! Close & refresh.');window.close();">Login</button>
+  <p style="text-align: center; margin-top: 16px;"><a href="../register-modal.html" target="_blank" style="color: #9a7c3e;">Register</a></p>
+</div>
+</body>
+</html>

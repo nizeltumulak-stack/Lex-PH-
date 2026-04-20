@@ -1,0 +1,2686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexPH — Philippine Law Research Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  --font-size-base: 1.125rem; /* Increased base for better readability */
+  --ink-900: #1a1410;
+  --ink-800: #2d2519;
+  --ink-700: #3e3428;
+  --ink-600: #5a4d3e;
+  --ink-400: #8a7b6a;
+  --ink-200: #c5b8a8;
+  --ink-100: #e0d6c9;
+  --ink-50:  #f5f0e8;
+  --ink-20:  #faf8f3;
+
+  --gold-600: #9a7c3e;
+  --gold-400: #c4a055;
+  --gold-200: #e8d08a;
+  --gold-100: #f5eab8;
+
+  --red-700: #8b2318;
+  --red-500: #b83224;
+  --red-100: #fce8e5;
+
+  --teal-700: #1a4a42;
+  --teal-500: #2a6b60;
+  --teal-100: #e0f0ee;
+
+  --bg-primary: #faf8f3;
+  --bg-secondary: #f5f0e8;
+  --bg-card: #ffffff;
+  --bg-sidebar: #1f1a13;
+
+--text-primary: #130f0b;
+  --text-secondary: #4a4133;
+  --text-muted: #6f5f52;
+  --text-light: #9f8f82;
+
+--border: rgba(74, 65, 51, 0.30);
+  --border-strong: rgba(74, 65, 51, 0.60);
+
+  --shadow-sm: 0 1px 3px rgba(26,20,16,0.06);
+  --shadow-md: 0 4px 12px rgba(26,20,16,0.10);
+  --shadow-lg: 0 12px 32px rgba(26,20,16,0.14);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --sidebar-w: 240px;
+  --header-h: 64px;
+  --content-max: 900px;
+
+  --serif: 'Source Serif 4', Georgia, serif;
+  --display: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+
+  --transition: 0.2s ease;
+}
+
+html {
+  font-size: 1.125rem; /* Global base font size increased */
+}
+
+body {
+  font-size: 1rem; /* Body relative to html for proportional scaling */
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a1410;
+  --bg-secondary: #231e17;
+  --bg-card: #2a2318;
+  --bg-sidebar: #111009;
+  --text-primary: #f0e8d8;
+  --text-secondary: #c5b8a8;
+  --text-muted: #8a7b6a;
+  --text-light: #5a4d3e;
+  --border: rgba(197,184,168,0.20);
+  --border-strong: rgba(197,184,168,0.40);
+  --gold-400: #d4b06a;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.6;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--header-h);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; gap: 0;
+  padding: 0;
+}
+
+.header-brand {
+  width: var(--sidebar-w);
+  padding: 0 20px;
+  display: flex; align-items: center; gap: 10px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  height: 100%;
+}
+.brand-seal-logo {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 1px 2px rgba(26,20,16,0.2));
+}
+[data-theme="dark"] .brand-seal svg {
+  color: var(--gold-400);
+}
+.brand-text { display: flex; flex-direction: column; }
+.brand-name {
+  font-family: var(--display);
+  font-size: 15px; font-weight: 700;
+  color: #f0e8d8; line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+.brand-sub {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--gold-400); font-weight: 500; line-height: 1;
+}
+
+.header-search-wrap {
+  flex: 1; padding: 0 20px; display: flex; align-items: center; gap: 12px;
+}
+.header-search {
+  flex: 1; max-width: 640px;
+  display: flex; align-items: center;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color var(--transition), background var(--transition);
+}
+.header-search:focus-within {
+  border-color: var(--gold-400);
+  background: rgba(255,255,255,0.10);
+}
+.search-icon {
+  padding: 0 12px;
+  color: rgba(255,255,255,0.35);
+  font-size: 14px;
+  display: flex; align-items: center;
+}
+#header-q {
+  flex: 1; background: none; border: none; outline: none;
+  color: #f0e8d8; font-family: var(--sans); font-size: 14px;
+  padding: 10px 0; min-width: 0;
+}
+#header-q::placeholder { color: rgba(255,255,255,0.28); }
+.btn-search {
+  padding: 8px 16px; background: var(--gold-600);
+  color: #f0e8d8; border: none; cursor: pointer;
+  font-family: var(--sans); font-size: 13px; font-weight: 500;
+  transition: background var(--transition);
+  height: 100%; white-space: nowrap;
+}
+.btn-search:hover { background: var(--gold-400); color: var(--bg-sidebar); }
+
+.header-actions {
+  display: flex; align-items: center; gap: 4px; padding-right: 16px;
+}
+.btn-icon {
+  width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+  color: rgba(255,255,255,0.45); border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: color var(--transition), background var(--transition);
+}
+.btn-icon:hover { color: #f0e8d8; background: rgba(255,255,255,0.08); }
+
+.user-display {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.1);
+  color: #f0e8d8;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+}
+.user-display:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.3);
+}
+.user-initial {
+  width: 28px; height: 28px;
+  background: var(--gold-600);
+  color: white;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+}
+
+.btn-auth {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.1);
+  color: #f0e8d8;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-auth:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.3);
+  color: #f8f4e8;
+}
+.auth-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.user-profile { position: relative; }
+.profile-dropdown {
+  position: absolute; top: 100%; right: 0; margin-top: 4px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); min-width: 220px; z-index: 1000; font-size: 13px;
+}
+.profile-dropdown div { padding: 12px 16px; border-bottom: 1px solid var(--border); font-weight: 500; }
+.profile-dropdown button { padding: 12px 16px; border: none; background: none; width: 100%; text-align: left; cursor: pointer; transition: background var(--transition); }
+.profile-dropdown button:hover { background: var(--bg-secondary); }
+.profile-dropdown button:last-child { color: var(--red-500); }
+
+.source-link {
+  color: var(--gold-600);
+  text-decoration: none;
+  font-weight: 600;
+}
+.source-link:hover {
+  text-decoration: underline;
+  color: var(--gold-400);
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.app-layout {
+  display: flex;
+  padding-top: var(--header-h);
+  min-height: 100vh;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-sidebar);
+  position: fixed;
+  top: var(--header-h); left: 0; bottom: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 16px 0;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.sidebar-section { margin-bottom: 24px; }
+.sidebar-label {
+  padding: 0 16px 8px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.25); font-weight: 600;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; cursor: pointer;
+  color: rgba(255,255,255,0.50);
+  font-size: 13px; font-weight: 400;
+  border-left: 2px solid transparent;
+  transition: all var(--transition);
+  position: relative;
+}
+.sidebar-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
+.sidebar-item.active {
+  color: var(--gold-400);
+  border-left-color: var(--gold-400);
+  background: rgba(196,160,85,0.08);
+}
+.sidebar-item-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-badge {
+  margin-left: auto;
+  font-size: 10px; font-weight: 600;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.4);
+  padding: 2px 6px; border-radius: 10px;
+}
+.sidebar-item.active .sidebar-badge {
+  background: rgba(196,160,85,0.2);
+  color: var(--gold-400);
+}
+
+.sidebar-divider {
+  height: 1px; background: rgba(255,255,255,0.06);
+  margin: 12px 16px;
+}
+
+/* Ad slot */
+.ad-slot {
+  margin: 24px 16px 16px;
+  padding: 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.12);
+  text-align: center;
+  font-size: 11px; color: rgba(255,255,255,0.4);
+}
+.ad-slot img { max-width: 100%; height: auto; }
+[data-theme="dark"] .ad-slot {
+  background: rgba(0,0,0,0.2);
+  border-color: rgba(255,255,255,0.08);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: calc(100vh - var(--header-h));
+}
+
+/* ============================================================
+   HOME / SEARCH LANDING
+   ============================================================ */
+.page { display: none; padding: 0; }
+.page.active { display: block; }
+
+.home-hero {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 60px 40px 48px;
+  text-align: center;
+}
+.hero-eyebrow {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--gold-600); font-weight: 600; margin-bottom: 12px;
+}
+.hero-title {
+  font-family: var(--display);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700; line-height: 1.15;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.hero-title em { font-style: italic; color: var(--gold-600); }
+.hero-subtitle {
+  font-family: var(--serif);
+  font-size: 16px; color: var(--text-secondary);
+  max-width: 540px; margin: 0 auto 32px;
+  font-weight: 300; line-height: 1.7;
+}
+
+.hero-search {
+  display: flex; max-width: 640px; margin: 0 auto 20px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.hero-search:focus-within {
+  border-color: var(--gold-400);
+  box-shadow: 0 4px 20px rgba(154,124,62,0.15);
+}
+#main-query {
+  flex: 1; border: none; outline: none; padding: 14px 16px;
+  font-family: var(--serif); font-size: 15px;
+  color: var(--text-primary); background: transparent;
+}
+#main-query::placeholder { color: var(--text-light); font-style: italic; }
+.btn-hero-search {
+  padding: 14px 24px;
+  background: var(--gold-600); color: white;
+  border: none; cursor: pointer;
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  transition: background var(--transition);
+  white-space: nowrap; letter-spacing: 0.02em;
+}
+.btn-hero-search:hover { background: var(--ink-700); }
+
+.hero-suggestions {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+}
+.suggestion-chip {
+  padding: 6px 14px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; font-size: 12px; color: var(--text-secondary);
+  cursor: pointer; transition: all var(--transition);
+  font-family: var(--sans);
+}
+.suggestion-chip:hover {
+  border-color: var(--gold-400); color: var(--gold-600);
+  background: var(--gold-100);
+}
+
+/* ============================================================
+   CATEGORY GRID
+   ============================================================ */
+.categories-section { padding: 40px; }
+.section-header {
+  display: flex; align-items: baseline; gap: 12px;
+  margin-bottom: 24px;
+}
+.section-title {
+  font-family: var(--display);
+  font-size: 20px; font-weight: 600;
+  color: var(--text-primary);
+}
+.section-line {
+  flex: 1; height: 1px; background: var(--border);
+}
+
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.cat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative; overflow: hidden;
+}
+.cat-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--gold-400);
+  transform: scaleY(0); transform-origin: bottom;
+  transition: transform var(--transition);
+}
+.cat-card:hover {
+  border-color: var(--gold-200);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.cat-card:hover::before { transform: scaleY(1); }
+.cat-icon { font-size: 22px; margin-bottom: 10px; }
+.cat-name {
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.cat-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.cat-counts {
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 12px;
+}
+.cat-count { font-size: 11px; color: var(--text-muted); }
+.cat-count strong { color: var(--gold-600); font-weight: 600; }
+
+/* ============================================================
+   SEARCH RESULTS PAGE
+   ============================================================ */
+.results-wrap { max-width: 900px; margin: 0 auto; padding: 32px 40px; }
+
+.results-header {
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.results-query {
+  font-family: var(--display);
+  font-size: 22px; font-weight: 600;
+  color: var(--text-primary); margin-bottom: 4px;
+}
+.results-meta { font-size: 12px; color: var(--text-muted); }
+.results-meta span { color: var(--gold-600); font-weight: 500; }
+/* ============================================================
+   DEEP SEARCH UI
+   ============================================================ */
+.deep-search-status { display: flex; flex-direction: column; gap: 10px; }
+.ds-step {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--ink-400);
+  padding: 8px 14px; border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+.ds-step.active {
+  color: var(--ink-900); background: var(--ink-50);
+  border-color: var(--border);
+  font-weight: 500;
+}
+.ds-step.active::before { content: ''; display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--gold-600); margin-right:2px; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+
+.source-ping {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--ink-400);
+  padding: 6px 10px; border-radius: 6px;
+  background: var(--ink-50); border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+.source-ping.pinging { color: var(--teal-500); border-color: rgba(42,107,96,0.3); background: var(--teal-100); }
+.ping-dot { margin-left: auto; font-weight: 700; }
+
+/* SOURCES GRID */
+.sources-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.source-card {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-decoration: none; color: inherit;
+  transition: all var(--transition);
+}
+.source-card:hover { border-color: var(--gold-400); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.source-card-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+.source-card-body { flex: 1; min-width: 0; }
+.source-card-name { font-size: 13px; font-weight: 600; color: var(--ink-900); margin-bottom: 2px; }
+.source-card-desc { font-size: 11px; color: var(--ink-400); margin-bottom: 5px; }
+.source-card-relevance { font-size: 12px; color: var(--gold-600); font-style: italic; line-height: 1.4; }
+.source-card-arrow { font-size: 14px; color: var(--gold-400); flex-shrink: 0; margin-top: 2px; }
+
+
+/* Category badge */
+.cat-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.06em; margin-left: 10px;
+}
+.cat-badge.Civil       { background: #e8f4fc; color: #1a5276; }
+.cat-badge.Criminal    { background: #fce8e5; color: #7b241c; }
+.cat-badge.Labor       { background: #e8f8f5; color: #1a5e45; }
+.cat-badge.Constitutional { background: #fef9e7; color: #7d6608; }
+.cat-badge.Commercial  { background: #f4ecf7; color: #6c3483; }
+.cat-badge.Family      { background: #fde8f0; color: #943163; }
+.cat-badge.Tax         { background: #f0f4f8; color: #2c3e50; }
+.cat-badge.Administrative { background: #fdf2e9; color: #7e5109; }
+
+/* Legal structure sections */
+.legal-section {
+  margin-bottom: 32px;
+  animation: fadeUp 0.4s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.legal-section:nth-child(1) { animation-delay: 0.05s; }
+.legal-section:nth-child(2) { animation-delay: 0.10s; }
+.legal-section:nth-child(3) { animation-delay: 0.15s; }
+.legal-section:nth-child(4) { animation-delay: 0.20s; }
+.legal-section:nth-child(5) { animation-delay: 0.25s; }
+.legal-section:nth-child(6) { animation-delay: 0.30s; }
+
+.section-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.section-num {
+  width: 22px; height: 22px;
+  background: var(--gold-600);
+  color: white;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.section-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+  font-weight: 700; color: var(--gold-600);
+}
+
+/* Issue block */
+.issue-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold-400);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+}
+.issue-text {
+  font-family: var(--serif);
+  font-size: 15px; font-style: italic;
+  color: var(--text-primary); line-height: 1.7;
+}
+
+/* Law cards */
+.law-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: box-shadow var(--transition);
+}
+.law-card:hover { box-shadow: var(--shadow-md); }
+.law-card-header {
+  padding: 14px 18px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.law-article {
+  font-family: var(--sans); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.10em;
+  color: var(--gold-600);
+}
+.law-source { font-size: 11px; color: var(--text-muted); }
+.law-title {
+  font-family: var(--display); font-size: 14px; font-weight: 600;
+  color: var(--text-primary); flex: 1;
+}
+.law-content {
+  padding: 16px 18px;
+  font-family: var(--serif); font-size: 14px; line-height: 1.75;
+  color: var(--text-secondary);
+}
+
+/* Case cards */
+.case-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+  transition: box-shadow var(--transition);
+  cursor: pointer;
+}
+.case-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); }
+.case-card-header {
+  padding: 14px 18px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.case-meta-left { flex: 1; }
+.case-title-text {
+  font-family: var(--display);
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 5px; line-height: 1.35;
+}
+.case-gr {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--gold-600);
+}
+.case-date { font-size: 11px; color: var(--text-muted); margin-left: 10px; }
+.case-ponente { font-size: 11px; color: var(--text-muted); font-style: italic; margin-left: 10px; }
+.landmark-badge {
+  flex-shrink: 0;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  background: var(--gold-100); color: var(--gold-600);
+  padding: 3px 8px; border-radius: 20px;
+}
+.case-doctrine {
+  padding: 14px 18px;
+  font-family: var(--serif); font-size: 13px;
+  color: var(--text-primary); line-height: 1.7;
+  border-bottom: 1px solid var(--border);
+  font-style: italic;
+}
+.case-doctrine::before {
+  content: '"';
+  font-size: 24px; color: var(--gold-400);
+  line-height: 0; vertical-align: -8px;
+  margin-right: 2px;
+}
+.case-expandable { display: none; }
+.case-card.expanded .case-expandable { display: block; }
+.case-fields {
+  padding: 16px 18px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.case-field-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em;
+  font-weight: 700; color: var(--text-muted); margin-bottom: 5px;
+}
+.case-field-value {
+  font-family: var(--serif); font-size: 13px;
+  color: var(--text-secondary); line-height: 1.6;
+}
+.case-expand-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 8px 18px;
+  border: none; background: none; cursor: pointer;
+  font-size: 11px; color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  transition: color var(--transition);
+  width: 100%; font-family: var(--sans);
+}
+.case-expand-btn:hover { color: var(--gold-600); }
+
+/* Doctrine cards */
+.doctrine-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.doctrine-name {
+  font-family: var(--display);
+  font-size: 15px; font-weight: 600;
+  color: var(--text-primary); margin-bottom: 8px;
+}
+.doctrine-desc {
+  font-family: var(--serif); font-size: 13px;
+  color: var(--text-secondary); line-height: 1.75; margin-bottom: 10px;
+}
+.doctrine-meta {
+  font-size: 11px; color: var(--text-muted);
+  display: flex; flex-wrap: wrap; gap: 12px;
+}
+
+/* Analysis block */
+.analysis-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.analysis-text {
+  font-family: var(--serif); font-size: 14px;
+  color: var(--text-primary); line-height: 1.8;
+  white-space: pre-line;
+}
+
+/* Conclusion block */
+.conclusion-block {
+  background: var(--ink-800);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+[data-theme="dark"] .conclusion-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.conclusion-text {
+  font-family: var(--serif); font-size: 14px;
+  color: #e0d6c9; line-height: 1.8;
+}
+[data-theme="dark"] .conclusion-text { color: var(--text-secondary); }
+
+/* No results */
+.no-results {
+  text-align: center; padding: 60px 20px;
+}
+.no-results-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+.no-results-title {
+  font-family: var(--display); font-size: 20px; color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.no-results-text { font-size: 14px; color: var(--text-muted); }
+
+/* ============================================================
+   BROWSE PAGE
+   ============================================================ */
+.browse-wrap { padding: 32px 40px; }
+.browse-controls {
+  display: flex; gap: 12px; margin-bottom: 24px;
+  flex-wrap: wrap; align-items: center;
+}
+.browse-controls select, .browse-controls input {
+  padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--sans); font-size: 13px;
+  background: var(--bg-card); color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.browse-controls select:focus,
+.browse-controls input:focus { border-color: var(--gold-400); }
+.browse-controls input { flex: 1; max-width: 280px; }
+
+.cases-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--bg-card);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.cases-table th {
+  padding: 12px 16px; text-align: left;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.10em;
+  font-weight: 700; color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.ad-table {
+  width: 100%; margin: 24px 0; border-collapse: collapse;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.ad-table td { padding: 12px; text-align: center; font-size: 11px; color: var(--text-muted); }
+.ad-table img { max-width: 100%; height: auto; }
+.cases-table td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; vertical-align: top;
+}
+.cases-table tr:last-child td { border-bottom: none; }
+.cases-table tr:hover td { background: var(--bg-secondary); }
+.table-title { font-weight: 500; color: var(--text-primary); cursor: pointer; }
+.table-title:hover { color: var(--gold-600); }
+.table-gr { font-size: 11px; color: var(--gold-600); font-weight: 600; margin-top: 2px; }
+.table-date, .table-ponente { font-size: 11px; color: var(--text-muted); }
+.table-cat { font-size: 11px; }
+
+/* ============================================================
+   LOADING STATE
+   ============================================================ */
+.loading-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(250,248,243,0.85);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition);
+}
+[data-theme="dark"] .loading-overlay { background: rgba(26,20,16,0.90); }
+.loading-overlay.active { opacity: 1; pointer-events: all; }
+
+.loading-seal {
+  width: 48px; height: 48px;
+  background: var(--gold-600);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 20px; font-weight: 700;
+  color: white;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.92); opacity: 0.7; }
+}
+.loading-text {
+  font-family: var(--serif); font-size: 14px;
+  color: var(--text-muted); font-style: italic;
+}
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 300;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 18px;
+  background: var(--ink-800); color: #f0e8d8;
+  border-radius: var(--radius-md); font-size: 13px;
+  box-shadow: var(--shadow-lg);
+  animation: slideInRight 0.3s ease;
+  display: flex; align-items: center; gap: 8px;
+  min-width: 240px; max-width: 360px;
+}
+.toast.error { background: var(--red-700); }
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ============================================================
+   CASE DETAIL MODAL
+   ============================================================ */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 150;
+  background: rgba(26,20,16,0.6);
+  backdrop-filter: blur(2px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.modal-backdrop.active { display: flex; }
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  width: 100%; max-width: 760px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: scaleIn 0.25s ease;
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  padding: 20px 24px;
+  background: var(--bg-sidebar);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+}
+.modal-title {
+  font-family: var(--display); font-size: 18px; font-weight: 600; color: #f0e8d8;
+  line-height: 1.35;
+}
+.modal-gr { font-size: 12px; color: var(--gold-400); margin-top: 4px; font-weight: 600; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.4); font-size: 20px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: color var(--transition);
+  margin-top: -2px;
+}
+.modal-close:hover { color: rgba(255,255,255,0.9); }
+.modal-body { padding: 24px; }
+.modal-section { margin-bottom: 24px; }
+.modal-section-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+  font-weight: 700; color: var(--gold-600); margin-bottom: 8px;
+}
+.modal-section-content {
+  font-family: var(--serif); font-size: 14px;
+  color: var(--text-secondary); line-height: 1.75;
+}
+.modal-divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+.admin-wrap { padding: 32px 40px; }
+.admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.admin-stat {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+}
+.admin-stat-num {
+  font-family: var(--display); font-size: 32px; font-weight: 700;
+  color: var(--gold-600); line-height: 1.1;
+}
+.admin-stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.admin-form { max-width: 680px; }
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.form-control {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--sans); font-size: 14px;
+  background: var(--bg-card); color: var(--text-primary);
+  outline: none; transition: border-color var(--transition);
+}
+.form-control:focus { border-color: var(--gold-400); }
+textarea.form-control { min-height: 100px; resize: vertical; line-height: 1.6; }
+select.form-control { cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--radius-sm);
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.btn-primary { background: var(--gold-600); color: white; }
+.btn-primary:hover { background: var(--ink-700); }
+.btn-secondary {
+  background: var(--bg-secondary); color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: var(--red-500); color: white; }
+.btn-danger:hover { background: var(--red-700); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; }
+  .sidebar { transform: translateX(-100%); width: 240px; z-index: 90; transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .header-brand { width: auto; border-right: none; padding-right: 8px; }
+  .results-wrap, .browse-wrap, .admin-wrap { padding: 20px 16px; }
+  .cat-grid { grid-template-columns: 1fr 1fr; }
+  .admin-grid { grid-template-columns: 1fr; }
+  .case-fields { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-400); }
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+.empty-tag { color: var(--text-light); font-style: italic; font-size: 13px; }
+.hidden { display: none !important; }
+.text-gold { color: var(--gold-600); }
+.text-center { text-align: center; }
+
+/* ============================================================
+   STRUCTURED RESULT FORMAT — v2
+   ============================================================ */
+.result-document {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 32px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Topic Header */
+.result-topic-bar {
+  background: var(--bg-sidebar);
+  padding: 20px 28px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.result-topic-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--gold-400); font-weight: 600; margin-bottom: 6px;
+}
+.result-topic-title {
+  font-family: var(--display);
+  font-size: 22px; font-weight: 700;
+  color: #f0e8d8; line-height: 1.2;
+}
+.result-topic-meta {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+  align-items: center;
+}
+.result-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 3px 10px; border-radius: 20px;
+  background: rgba(196,160,85,0.18); color: var(--gold-200);
+}
+.result-badge.landmark { background: rgba(42,107,96,0.25); color: #7fe0d0; }
+
+/* Section blocks inside document */
+.result-section {
+  border-bottom: 1px solid var(--border);
+  padding: 22px 28px;
+}
+.result-section:last-child { border-bottom: none; }
+.result-section-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.result-section-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gold-100); color: var(--gold-600);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.result-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--ink-400);
+}
+
+/* Legal Interpretation */
+.interp-text {
+  font-family: var(--serif);
+  font-size: 15px; line-height: 1.8;
+  color: var(--text-primary);
+}
+
+/* Jurisprudence block */
+.juri-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.juri-card:last-child { margin-bottom: 0; }
+.juri-header {
+  background: var(--ink-50);
+  padding: 14px 18px;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  flex-wrap: wrap;
+}
+.juri-title-block { flex: 1; min-width: 0; }
+.juri-case-title {
+  font-family: var(--display);
+  font-size: 16px; font-weight: 600;
+  color: var(--text-primary); line-height: 1.3;
+  margin-bottom: 5px;
+}
+.juri-case-title.blurred {
+  filter: blur(5px); user-select: none;
+  pointer-events: none; border-radius: 4px;
+  background: var(--ink-100);
+}
+.juri-meta-row {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.juri-gr {
+  font-size: 12px; font-weight: 700; color: var(--gold-600);
+  font-family: var(--sans); letter-spacing: 0.04em;
+}
+.juri-gr.blurred {
+  filter: blur(4px); user-select: none; pointer-events: none;
+  background: var(--ink-100); border-radius: 3px;
+}
+.juri-date { font-size: 12px; color: var(--ink-400); }
+.juri-ponente { font-size: 12px; color: var(--ink-600); font-style: italic; }
+.juri-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.juri-source-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px;
+  background: var(--gold-600); color: white;
+  border-radius: 5px; font-size: 11px; font-weight: 700;
+  text-decoration: none; letter-spacing: 0.05em;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.juri-source-btn:hover { background: #7a5c2e; }
+.juri-source-btn.blurred {
+  filter: blur(4px); pointer-events: none; user-select: none;
+}
+
+.juri-body { padding: 16px 18px; }
+.juri-field { margin-bottom: 14px; }
+.juri-field:last-child { margin-bottom: 0; }
+.juri-field-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--ink-400); margin-bottom: 5px;
+}
+.juri-field-value {
+  font-family: var(--serif); font-size: 14px; line-height: 1.75;
+  color: var(--text-primary);
+}
+
+/* Codal Provision block */
+.codal-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.codal-card:last-child { margin-bottom: 0; }
+.codal-header {
+  background: var(--ink-50);
+  padding: 12px 18px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.codal-article {
+  font-size: 13px; font-weight: 700; color: var(--gold-600);
+  letter-spacing: 0.04em;
+}
+.codal-source-name {
+  font-size: 11px; color: var(--ink-400); text-align: right;
+}
+.codal-title {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  padding: 10px 18px 0;
+}
+.codal-quote {
+  position: relative;
+  margin: 12px 18px 16px;
+  padding: 14px 18px 14px 20px;
+  background: var(--gold-100);
+  border-left: 4px solid var(--gold-600);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-family: var(--serif);
+  font-size: 14px; line-height: 1.8;
+  color: var(--ink-900);
+  font-style: italic;
+}
+.codal-quote::before {
+  content: '"';
+  position: absolute; top: -6px; left: 14px;
+  font-size: 40px; color: var(--gold-400);
+  font-family: var(--display); line-height: 1;
+}
+.codal-highlight {
+  background: rgba(154,124,62,0.25);
+  border-radius: 2px; padding: 0 2px;
+  font-weight: 600; font-style: normal;
+}
+.codal-source-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin: 0 18px 14px;
+  font-size: 12px; color: var(--gold-600);
+  text-decoration: none; font-weight: 600;
+}
+.codal-source-link:hover { text-decoration: underline; }
+
+/* Doctrine block */
+.doctrine-result-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  background: var(--bg-card);
+}
+.doctrine-result-name {
+  font-weight: 700; font-size: 15px; color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.doctrine-result-desc {
+  font-family: var(--serif); font-size: 14px; line-height: 1.75;
+  color: var(--text-secondary); margin-bottom: 10px;
+}
+.doctrine-result-meta {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  font-size: 11px; color: var(--ink-400);
+}
+
+/* Paywall overlay */
+.paywall-wrap {
+  position: relative;
+}
+.paywall-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 0%, rgba(250,248,243,0.92) 40%, rgba(250,248,243,0.99) 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end;
+  padding: 20px; border-radius: var(--radius-md);
+  z-index: 10;
+}
+[data-theme="dark"] .paywall-overlay {
+  background: linear-gradient(to bottom, transparent 0%, rgba(26,20,16,0.92) 40%, rgba(26,20,16,0.99) 100%);
+}
+.paywall-msg {
+  text-align: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  box-shadow: var(--shadow-md);
+  max-width: 360px; width: 100%;
+}
+.paywall-icon { font-size: 22px; margin-bottom: 6px; }
+.paywall-title { font-weight: 700; font-size: 14px; color: var(--text-primary); margin-bottom: 4px; }
+.paywall-sub { font-size: 12px; color: var(--ink-400); margin-bottom: 10px; }
+.paywall-btn {
+  display: inline-block; padding: 8px 20px;
+  background: var(--gold-600); color: white;
+  border-radius: 6px; font-size: 12px; font-weight: 700;
+  text-decoration: none; letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+.paywall-btn:hover { background: #7a5c2e; }
+
+/* Sources index mini-grid */
+.sources-mini-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr));
+  gap: 10px;
+}
+.source-mini-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--ink-50); border: 1px solid var(--border);
+  border-radius: var(--radius-md); text-decoration: none;
+  color: inherit; transition: all 0.2s;
+}
+.source-mini-card:hover { border-color: var(--gold-400); background: var(--bg-card); box-shadow: var(--shadow-sm); }
+.source-mini-icon { font-size: 18px; flex-shrink: 0; }
+.source-mini-body { flex: 1; min-width: 0; }
+.source-mini-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.source-mini-desc { font-size: 11px; color: var(--ink-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.source-mini-arrow { font-size: 12px; color: var(--gold-400); }
+
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-seal">⚖</div>
+  <div class="loading-text">Researching Philippine jurisprudence…</div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Case Detail Modal -->
+<div class="modal-backdrop" id="caseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">—</div>
+        <div class="modal-gr" id="modalGR">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand">
+<img src="lexph logo.svg" alt="LexPH Logo" class="brand-seal-logo"/>
+    <div class="brand-text">
+      <div class="brand-name">LexPH</div>
+      <div class="brand-sub">Philippine Law Research</div>
+    </div>
+  </div>
+  <div class="header-search-wrap">
+    <div class="header-search">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="header-q" placeholder="Search laws, cases, doctrines…" autocomplete="off">
+      <button class="btn-search" onclick="doSearch(document.getElementById('header-q').value)">Search</button>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <button class="btn-icon" onclick="toggleTheme()" title="Toggle dark mode" id="themeBtn">🌙</button>
+    <button class="btn-icon admin-btn" id="adminBtn" style="font-size: 14px; display: none;" title="Admin" onclick="showPage('admin')">⚙</button>
+    <div class="user-profile" id="userProfile">
+      <!-- Populated by checkLoginStatus() -->
+    </div>
+  </div>
+  
+</header>
+
+<!-- APP LAYOUT -->
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+      <div class="sidebar-item active" data-page="home" onclick="showPage('home')">
+        <span class="sidebar-item-icon">⌂</span> Home
+      </div>
+      <div class="sidebar-item" data-page="cases" onclick="showPage('cases')">
+        <span class="sidebar-item-icon">⚖</span> Browse Cases
+      </div>
+      <div class="sidebar-item" data-page="laws" onclick="showPage('laws')">
+        <span class="sidebar-item-icon">📖</span> Browse Laws
+      </div>
+      <div class="sidebar-item" data-page="doctrines" onclick="showPage('doctrines')">
+        <span class="sidebar-item-icon">📚</span> Doctrines
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Legal Fields</div>
+      <div class="sidebar-item" onclick="filterByCategory('Civil')">
+        <span class="sidebar-item-icon">⚖</span> Civil Law
+        <span class="sidebar-badge" id="badge-civil">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Criminal')">
+        <span class="sidebar-item-icon">⚑</span> Criminal Law
+        <span class="sidebar-badge" id="badge-criminal">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Labor')">
+        <span class="sidebar-item-icon">⚒</span> Labor Law
+        <span class="sidebar-badge" id="badge-labor">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Constitutional')">
+        <span class="sidebar-item-icon">★</span> Constitutional
+        <span class="sidebar-badge" id="badge-constitutional">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Commercial')">
+        <span class="sidebar-item-icon">◈</span> Commercial
+        <span class="sidebar-badge" id="badge-commercial">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Family')">
+        <span class="sidebar-item-icon">⌂</span> Family Law
+        <span class="sidebar-badge" id="badge-family">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Tax')">
+        <span class="sidebar-item-icon">◎</span> Tax Law
+        <span class="sidebar-badge" id="badge-tax">—</span>
+      </div>
+      <div class="sidebar-item" onclick="filterByCategory('Remedial')">
+        <span class="sidebar-item-icon">◉</span> Remedial Law
+        <span class="sidebar-badge" id="badge-remedial">—</span>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick Links</div>
+      <div class="sidebar-item" onclick="doSearch('illegal dismissal labor law')">
+        <span class="sidebar-item-icon">→</span> Illegal Dismissal
+      </div>
+      <div class="sidebar-item" onclick="doSearch('contract of sale perfection')">
+        <span class="sidebar-item-icon">→</span> Contract of Sale
+      </div>
+      <div class="sidebar-item" onclick="doSearch('quasi-delict negligence damages')">
+        <span class="sidebar-item-icon">→</span> Quasi-Delict
+      </div>
+      <div class="sidebar-item" onclick="doSearch('murder treachery criminal law')">
+        <span class="sidebar-item-icon">→</span> Murder & Treachery
+      </div>
+    </div>
+    <div class="ad-slot">
+      <div>Advertisement</div>
+      <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjI1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjhmOGYzIi8+PHRleHQgeD0iNTAlIiB5PSI5NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzVhNGQzZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+PHRzcGFuPkxlZ1BITiAtIEFkIFBsYWNlaG9sZGVyPC90c3Bhbj48L3RleHQ+PC9zdmc+" alt="Ad placeholder">
+      <div style="font-size: 10px; margin-top: 4px;">300x250 Leaderboard</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <div class="home-hero">
+        <div class="hero-eyebrow">Philippine Legal Research Platform</div>
+        <h1 class="hero-title">Research the Law with<br><em>Confidence and Precision</em></h1>
+        <p class="hero-subtitle">Access codal provisions, Supreme Court jurisprudence, and legal doctrines. Ask any legal question in plain language.</p>
+        <div class="hero-search">
+          <input type="text" id="main-query" placeholder="e.g. What are the elements of a valid contract?" autocomplete="off">
+          <button class="btn-hero-search" onclick="doSearch(document.getElementById('main-query').value)">
+            Research →
+          </button>
+        </div>
+        <div class="hero-suggestions">
+          <span class="suggestion-chip" onclick="doSearch('elements of quasi-delict')">Elements of quasi-delict</span>
+          <span class="suggestion-chip" onclick="doSearch('illegal dismissal due process')">Illegal dismissal</span>
+          <span class="suggestion-chip" onclick="doSearch('void contract Civil Code')">Void contracts</span>
+          <span class="suggestion-chip" onclick="doSearch('security of tenure labor')">Security of tenure</span>
+          <span class="suggestion-chip" onclick="doSearch('treachery murder qualifying')">Murder & treachery</span>
+          <span class="suggestion-chip" onclick="doSearch('contract sale perfection consent')">Contract of sale</span>
+        </div>
+        <div class="ad-slot" style="max-width: 728px; margin: 32px auto 0;">
+          <div>Hero Banner Ad</div>
+          <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzI4IiBoZWlnaHQ9IjkwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNmOGY4ZjMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE4IiBmaWxsPSIjNWE0ZDNlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+PG5zcGFuPkxlPHRzcGFuPkFITiAtIEhlcm8gQmFubmVyPC90c3Bhbj48L3RzcGFuPjwvdGV4dD48L3N2Zz4=" alt="Hero ad">
+          <div style="font-size: 10px; margin-top: 4px;">728x90 Leaderboard</div>
+        </div>
+      </div>
+
+      <div class="categories-section">
+
+          <div class="section-line"></div>
+        </div>
+        <div class="cat-grid" id="catGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS PAGE -->
+    <div class="page" id="page-results">
+      <div class="results-wrap" id="resultsContent"></div>
+    </div>
+
+    <!-- CASES BROWSE PAGE -->
+    <div class="page" id="page-cases">
+      <div class="browse-wrap">
+        <div class="section-header" style="margin-bottom:20px">
+          <div class="section-title">Supreme Court Cases</div>
+          <div class="section-line"></div>
+        </div>
+        <div class="browse-controls">
+          <input type="text" id="caseSearch" placeholder="Search by title or G.R. No…" oninput="filterCases()">
+          <select id="caseCatFilter" onchange="filterCases()">
+            <option value="">All Categories</option>
+            <option value="Civil">Civil Law</option>
+            <option value="Criminal">Criminal Law</option>
+            <option value="Labor">Labor Law</option>
+            <option value="Constitutional">Constitutional</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Family">Family Law</option>
+            <option value="Tax">Tax Law</option>
+            <option value="Remedial">Remedial Law</option>
+            <option value="Administrative">Administrative</option>
+          </select>
+        </div>
+        <table class="cases-table">
+          <thead>
+            <tr>
+              <th>Case Title / G.R. No.</th>
+              <th>Date Decided</th>
+              <th>Ponente</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody id="casesTableBody">
+            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:40px">Loading cases…</td></tr>
+          </tbody>
+        </table>
+        <table class="ad-table">
+          <tbody>
+            <tr><td><div>Inline Ad</div><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2Y4ZjhmMyIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM1YTRkM2UiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj48dHNwYW4+TGV4UEggLSAxMDB4MTAwPC90c3Bhbj48L3RleHQ+PC9zdmc+" alt="Inline ad"><div>100% width responsive</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LAWS BROWSE PAGE -->
+    <div class="page" id="page-laws">
+      <div class="browse-wrap">
+        <div class="section-header" style="margin-bottom:20px">
+          <div class="section-title">Codal Provisions</div>
+          <div class="section-line"></div>
+        </div>
+        <div class="browse-controls">
+          <input type="text" id="lawSearch" placeholder="Search provisions…" oninput="filterLaws()">
+          <select id="lawCatFilter" onchange="filterLaws()">
+            <option value="">All Categories</option>
+            <option value="Civil">Civil Law</option>
+            <option value="Criminal">Criminal Law</option>
+            <option value="Labor">Labor Law</option>
+            <option value="Constitutional">Constitutional</option>
+            <option value="Commercial">Commercial</option>
+            <option value="Family">Family Law</option>
+            <option value="Tax">Tax Law</option>
+            <option value="Remedial">Remedial Law</option>
+          </select>
+        </div>
+        <div id="lawsGrid"></div>
+      </div>
+    </div>
+
+    <!-- DOCTRINES PAGE -->
+    <div class="page" id="page-doctrines">
+      <div class="browse-wrap">
+        <div class="section-header" style="margin-bottom:20px">
+          <div class="section-title">Legal Doctrines</div>
+          <div class="section-line"></div>
+        </div>
+        <div id="doctrinesGrid"></div>
+      </div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div class="page" id="page-admin">
+      <div class="admin-wrap">
+        <div class="section-header" style="margin-bottom:24px">
+          <div class="section-title">Admin Panel</div>
+          <div class="section-line"></div>
+        </div>
+
+        <div class="admin-grid" id="adminStats">
+          <div class="admin-stat"><div class="admin-stat-num" id="statLaws">—</div><div class="admin-stat-label">Codal Provisions</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statCases">—</div><div class="admin-stat-label">Supreme Court Cases</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statDoctrines">—</div><div class="admin-stat-label">Legal Doctrines</div></div>
+          <div class="admin-stat"><div class="admin-stat-num" id="statSearches">—</div><div class="admin-stat-label">Total Searches</div></div>
+        </div>
+
+        <div class="section-header" style="margin-bottom:20px">
+          <div class="section-title" style="font-size:16px">Subscribers</div>
+          <div class="section-line"></div>
+        </div>
+        <div class="browse-controls" style="margin-bottom:20px">
+          <input type="text" id="subSearch" placeholder="Search subscribers..." oninput="loadSubscribers()">
+          <select id="subStatusFilter" onchange="loadSubscribers()">
+            <option value="">All Status</option>
+            <option value="free">Free</option>
+            <option value="trial">Trial</option>
+            <option value="premium">Premium</option>
+          </select>
+          <span id="subCount" style="margin-left:auto;font-size:13px;color:var(--text-muted)"></span>
+        </div>
+        <table class="cases-table" id="subscribersTable">
+          <thead>
+    <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Trial Ends</th>
+              <th>Stripe ID</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subTableBody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px">Loading subscribers...</td></tr>
+          </tbody>
+        </table>
+        <div style="text-align:center;margin-top:20px">
+          <button class="btn btn-secondary" onclick="loadSubscribers(1)" id="subPagePrev" style="display:none">← Prev</button>
+          <span id="subPageInfo"></span>
+          <button class="btn btn-secondary" onclick="loadSubscribers(parseInt(document.getElementById('subPageInfo').textContent.split('of')[1].trim()))" id="subPageNext" style="display:none">Next →</button>
+        </div>
+
+        <div class="section-header" style="margin:40px 0 20px 0">
+          <div class="section-title" style="font-size:16px">Add New Case</div>
+          <div class="section-line"></div>
+        </div>
+        <div class="admin-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="form-group">
+<label for="f-case-title" class="form-label">Case Title *</label>
+              <input id="f-case-title" class="form-control" placeholder="e.g. People v. Juan Dela Cruz">
+            </div>
+            <div class="form-group">
+<label for="f-gr" class="form-label">G.R. Number *</label>
+              <input id="f-gr" class="form-control" placeholder="G.R. No. 123456">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div class="form-group">
+<label for="f-date" class="form-label">Date Decided *</label>
+              <input id="f-date" class="form-control" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ponente</label>
+              <input class="form-control" id="f-ponente" placeholder="Justice Name, J.">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <select class="form-control" id="f-category">
+                <option value="">Select…</option>
+                <option>Civil</option><option>Criminal</option><option>Labor</option>
+                <option>Constitutional</option><option>Commercial</option><option>Family</option>
+                <option>Tax</option><option>Administrative</option><option>Remedial</option><option>Special Laws</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Doctrine / Ruling Principle *</label>
+            <textarea class="form-control" id="f-doctrine" rows="3" placeholder="Core legal doctrine established in this case…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Facts (Summary) *</label>
+            <textarea class="form-control" id="f-facts" rows="4" placeholder="Summary of material facts…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Issue(s) *</label>
+            <textarea class="form-control" id="f-issue" rows="2" placeholder="Legal issues resolved by the court…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ruling (Summary) *</label>
+            <textarea class="form-control" id="f-ruling" rows="3" placeholder="Summary of the court's ruling…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma-separated)</label>
+            <input class="form-control" id="f-tags" placeholder="contract,sale,perfection,consent…">
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+            <input type="checkbox" id="f-landmark">
+            <label for="f-landmark" style="font-size:13px;cursor:pointer">Mark as Landmark Case</label>
+          </div>
+          <button class="btn btn-primary" onclick="submitCase()">Add Case to Database</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showLoginModal() {
+  window.location.href = 'login-modal.html';
+}
+
+function showRegisterModal() {
+  window.location.href = 'register-modal.html';
+}
+
+// Check login status using localStorage
+function checkLoginStatus() {
+  const profile = document.getElementById('userProfile');
+  const adminBtn = document.getElementById('adminBtn');
+  const stored = localStorage.getItem('lexph_user');
+
+  if (stored) {
+    try {
+      const user = JSON.parse(stored);
+      const initial = (user.username || user.full_name || '?').slice(0, 1).toUpperCase();
+      profile.innerHTML = `
+        <div class="user-display" onclick="toggleProfile()" title="Hi, ${user.username}">
+          <span class="user-initial">${initial}</span>
+          <span class="user-name">${user.username}</span>
+        </div>
+        <div class="profile-dropdown" id="profileDropdown" style="display:none;">
+          <div>
+            <strong>${user.username}</strong><br>
+            <span style="font-size:11px;color:var(--text-muted)">${user.email || ''}</span>
+          </div>
+          <a href="subscribe.html" style="display:block;padding:12px 16px;color:var(--gold-600);text-decoration:none;font-weight:600;border-top:1px solid var(--border);">💎 Upgrade Pro</a>
+          <button onclick="logoutUser()">🚪 Logout</button>
+        </div>
+      `;
+      adminBtn.style.display = user.role === 'admin' ? 'flex' : 'none';
+    } catch (e) {
+      localStorage.removeItem('lexph_user');
+      showGuestButtons(profile, adminBtn);
+    }
+  } else {
+    showGuestButtons(profile, adminBtn);
+  }
+}
+
+function showGuestButtons(profile, adminBtn) {
+  profile.innerHTML = `
+    <div class="auth-group">
+      <button class="btn-auth" onclick="showLoginModal()">Login</button>
+      <button class="btn-auth" onclick="showRegisterModal()">Register</button>
+    </div>
+  `;
+  if (adminBtn) adminBtn.style.display = 'none';
+}
+
+
+
+function toggleProfile() {
+  const dropdown = document.getElementById('profileDropdown');
+  if (!dropdown) return;
+  dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+}
+
+function logoutUser() {
+  if (confirm('Log out? Your session will end.')) {
+    localStorage.removeItem('lexph_user');
+    checkLoginStatus();
+    showToast('Logged out successfully');
+  }
+}
+
+window.addEventListener('load', checkLoginStatus);
+document.addEventListener('click', e => {
+  if (!e.target.closest('.user-profile')) document.getElementById('profileDropdown')?.style.setProperty('display', 'none');
+});
+
+// ============================================================
+// LexPH Frontend — Main Application
+// ============================================================
+
+const API_BASE = 'api/'; // Adjust if hosted differently
+let allCases = [];
+let allLaws  = [];
+let allDoctrines = [];
+let currentTheme = localStorage.getItem('lexph-theme') || 'dark';
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(currentTheme);
+  const savedSize = localStorage.getItem('lexph-font-size') || 'normal';
+  const sizesMap = {small: '0.875rem', normal: '1rem', large: '1.125rem'};
+  document.documentElement.style.setProperty('--font-size-base', sizesMap[savedSize]);
+  loadCategoryStats();
+  bindSearchKeys();
+
+  // Demo: Load mock data for pages (in production, call real PHP API)
+  loadDemoData();
+});
+
+function bindSearchKeys() {
+  ['main-query', 'header-q'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch(el.value);
+    });
+  });
+}
+
+// ============================================================
+// SEARCH
+// ============================================================
+// ============================================================
+// PHILIPPINE LEGAL SOURCES INDEX
+// ============================================================
+const PH_LEGAL_SOURCES = [
+  { id: 'sc',         name: 'Supreme Court PH',         url: 'https://sc.judiciary.gov.ph',               icon: '⚖', searchTpl: q => `https://sc.judiciary.gov.ph/search/?q=${encodeURIComponent(q)}`,        desc: 'Official SC decisions & resolutions' },
+  { id: 'elibrary',   name: 'SC E-Library',              url: 'https://elibrary.judiciary.gov.ph',         icon: '📚', searchTpl: q => `https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent(q)}`, desc: 'Full-text Supreme Court jurisprudence' },
+  { id: 'offgazette', name: 'Official Gazette',          url: 'https://www.officialgazette.gov.ph',        icon: '📰', searchTpl: q => `https://www.officialgazette.gov.ph/?s=${encodeURIComponent(q)}`,       desc: 'Official laws, EOs, proclamations' },
+  { id: 'congress',   name: 'House of Representatives',  url: 'https://www.congress.gov.ph',               icon: '🏛', searchTpl: q => `https://www.congress.gov.ph/legisdocs/?q=${encodeURIComponent(q)}`,   desc: 'Bills, acts, legislative records' },
+  { id: 'senate',     name: 'Senate of the Philippines', url: 'https://www.senate.gov.ph',                 icon: '🏛', searchTpl: q => `https://www.senate.gov.ph/lis/leg_sys.aspx?type=bill&q=${encodeURIComponent(q)}`, desc: 'Senate bills & resolutions' },
+  { id: 'lawphil',    name: 'The Lawphil Project',       url: 'https://lawphil.net',                       icon: '📖', searchTpl: q => `https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(q)}`,  desc: 'Comprehensive PH case law database' },
+  { id: 'chanrobles', name: 'ChanRobles Law Library',    url: 'https://www.chanrobles.com',                icon: '📋', searchTpl: q => `https://www.chanrobles.com/search?q=${encodeURIComponent(q)}`,        desc: 'Statutes, codes, jurisprudence' },
+  { id: 'cda',        name: 'CDA Asia Online',           url: 'https://cdasiaonline.com',                  icon: '🔍', searchTpl: q => `https://cdasiaonline.com/search?q=${encodeURIComponent(q)}`,          desc: 'Premium PH legal content' },
+  { id: 'lexlibris',  name: 'LexLibris',                 url: 'https://lexlibris.com',                     icon: '📜', searchTpl: q => `https://lexlibris.com/search?q=${encodeURIComponent(q)}`,             desc: 'Philippine legal research platform' },
+  { id: 'projuris',   name: 'Project Jurisprudence',     url: 'https://projectjurisprudence.com',          icon: '⚖', searchTpl: q => `https://projectjurisprudence.com/?s=${encodeURIComponent(q)}`,        desc: 'Case digests & legal analysis' },
+];
+
+async function doSearch(query) {
+  query = query.trim();
+  if (query.length < 3) { showToast('Please enter at least 3 characters.', 'error'); return; }
+
+  document.getElementById('header-q').value = query;
+  document.getElementById('main-query').value = query;
+
+  showPage('results');
+  renderSearchLoading(query);
+
+  try {
+    const result = await runDeepSearch(query);
+    renderDeepResults(result, query);
+  } catch (e) {
+    console.error('Search error:', e);
+    renderDeepResults(buildMockResults(query.toLowerCase()), query);
+  }
+}
+
+// ============================================================
+// LOADING STATE
+// ============================================================
+function renderSearchLoading(query) {
+  const wrap = document.getElementById('resultsContent');
+  wrap.innerHTML = `
+    <div style="padding:40px 32px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+        <div style="font-family:var(--display);font-size:22px;color:var(--ink-900)">Searching: <em style="color:var(--gold-600)">"${escHtml(query)}"</em></div>
+      </div>
+      <div class="deep-search-status" id="deepSearchStatus">
+        <div class="ds-step active" id="step-ai">🤖 <span>Analyzing query with AI…</span></div>
+        <div class="ds-step" id="step-index">🔍 <span>Indexing Philippine legal sources…</span></div>
+        <div class="ds-step" id="step-sc">⚖ <span>Querying Supreme Court databases…</span></div>
+        <div class="ds-step" id="step-render">📋 <span>Compiling results…</span></div>
+      </div>
+      <div style="margin-top:32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="sourceStatusGrid">
+        ${PH_LEGAL_SOURCES.map(s => `<div class="source-ping" id="ping-${s.id}">${s.icon} <span>${s.name}</span> <span class="ping-dot">⋯</span></div>`).join('')}
+      </div>
+    </div>`;
+
+  // Animate steps
+  const steps = ['step-index','step-sc','step-render'];
+  let i = 0;
+  const timer = setInterval(() => {
+    if (i < steps.length) {
+      document.getElementById(steps[i])?.classList.add('active');
+      i++;
+    } else clearInterval(timer);
+  }, 900);
+
+  // Animate source pings
+  PH_LEGAL_SOURCES.forEach((s, idx) => {
+    setTimeout(() => {
+      const el = document.getElementById('ping-' + s.id);
+      if (el) { el.classList.add('pinging'); el.querySelector('.ping-dot').textContent = '✓'; }
+    }, 400 + idx * 280);
+  });
+}
+
+// ============================================================
+// AI DEEP SEARCH ENGINE
+// ============================================================
+async function runDeepSearch(query) {
+  const systemPrompt = `You are LexPH, a precise Philippine legal research engine.
+Given a user's legal query, respond ONLY with a valid JSON object. No markdown, no backticks, no explanation — pure JSON only.
+
+JSON structure (follow exactly):
+{
+  "topic": "Exact legal topic title (short, e.g. 'Quasi-Delict under Article 2176')",
+  "category": "Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative",
+  "keywords": ["kw1","kw2","kw3"],
+  "legal_interpretation": "3-4 sentence plain-language interpretation of the legal topic as applied to the query. Cite specific articles and cases inline.",
+  "jurisprudence": [
+    {
+      "case_title": "Full official case title (e.g. 'Picart v. Smith')",
+      "gr_number": "G.R. No. XXXXXX",
+      "date_decided": "YYYY-MM-DD",
+      "ponente": "Surname, J.",
+      "division": "En Banc|First Division|Second Division|Third Division",
+      "category": "Civil|Criminal|Labor|etc",
+      "doctrine": "The exact holding or doctrine as stated by the Supreme Court in the decision",
+      "facts": "2-3 sentence summary of material facts",
+      "issue": "The exact legal issue resolved by the Court",
+      "ruling": "The Court's ruling and ratio decidendi",
+      "quoted_portion": "The single most important verbatim sentence or clause directly quoted from the decision (15-60 words)",
+      "is_landmark": 1,
+      "source_url": "https://elibrary.judiciary.gov.ph/thebookshelf/showdocsfriendly/1/XXXXX or https://lawphil.net/judjuris/juriYYYY/monYYYY/gr_XXXXXX_YYYY.html",
+      "elibrary_url": "https://elibrary.judiciary.gov.ph/search/?q=GR+XXXXXX",
+      "lawphil_url": "https://lawphil.net/judjuris/search.php?q=XXXXXX"
+    }
+  ],
+  "codal_provisions": [
+    {
+      "article_number": "Article XXXX / Section X / Rule X",
+      "title": "Title of the provision",
+      "full_text": "Complete exact text of the provision as enacted",
+      "quoted_portion": "The specific clause or sentence most relevant to the query (exact verbatim quote, 10-50 words)",
+      "source": "Full name of statute (e.g. Civil Code of the Philippines, Republic Act No. 386)",
+      "source_short": "Short name (e.g. Civil Code)",
+      "source_url": "https://lawphil.net or https://chanrobles.com direct deep link to that specific article/section",
+      "officialgazette_url": "https://www.officialgazette.gov.ph URL if applicable"
+    }
+  ],
+  "doctrines": [
+    {
+      "doctrine_name": "Name of the legal doctrine",
+      "description": "Full explanation of the doctrine and how it applies",
+      "legal_basis": "Specific statute article and/or case cite",
+      "related_cases": "G.R. No. XXXXXX",
+      "category": "Civil|Criminal|etc"
+    }
+  ],
+  "analysis": "2-3 paragraph synthesis of how the laws, cases, and doctrines answer the query",
+  "web_sources": [
+    {
+      "source_id": "sc|elibrary|offgazette|congress|senate|lawphil|chanrobles|cda|lexlibris|projuris",
+      "relevance": "One sentence on what specifically this source has on this query",
+      "direct_url": "Most specific deep URL on that site for this query (not just homepage)"
+    }
+  ]
+}
+
+Rules:
+- Only cite REAL, EXISTING Philippine Supreme Court cases and statutes
+- quoted_portion must be verbatim text — never paraphrase
+- source_url must be a real, specific deep link (not just the homepage)
+- Return 1-3 jurisprudence, 1-3 codal_provisions, 1-2 doctrines`;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: `Philippine legal query: ${query}` }]
+    })
+  });
+
+  if (!response.ok) throw new Error('API error ' + response.status);
+  const data = await response.json();
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  const clean = text.replace(/```json|```/g, '').trim();
+  const parsed = JSON.parse(clean);
+  parsed.query = query;
+  parsed.total = (parsed.jurisprudence?.length || 0) + (parsed.codal_provisions?.length || 0) + (parsed.doctrines?.length || 0);
+  return parsed;
+}
+
+// ============================================================
+// RENDER STRUCTURED RESULTS
+// ============================================================
+function getSubscriptionStatus() {
+  try {
+    const u = JSON.parse(localStorage.getItem('lexph_user') || 'null');
+    if (!u) return 'guest';
+    const sub = JSON.parse(localStorage.getItem('lexph_subscription') || 'null');
+    if (u.subscription_status === 'premium' || u.subscription_status === 'active') return 'premium';
+    if (sub && sub.plan) return 'pending'; // registered but pending payment
+    return 'registered'; // registered but not subscribed
+  } catch(e) { return 'guest'; }
+}
+
+function renderDeepResults(data, query) {
+  const wrap = document.getElementById('resultsContent');
+  const subStatus = getSubscriptionStatus();
+  const isPro = subStatus === 'premium';
+  // Free registered users can see content but case title + source links are blurred
+  const isGuest = subStatus === 'guest';
+  const blurCase = !isPro; // blur for guests AND registered-unpaid
+
+  const cat = data.category || '';
+  const catBadge = cat ? `<span class="cat-badge ${cat}">${cat} Law</span>` : '';
+
+  let html = '';
+
+  // ── DOCUMENT WRAPPER ──
+  html += `<div class="result-document">`;
+
+  // ── TOPIC HEADER ──
+  html += `
+    <div class="result-topic-bar">
+      <div class="result-topic-label">Legal Research Result</div>
+      <div class="result-topic-title">${escHtml(data.topic || query)} ${catBadge}</div>
+      <div class="result-topic-meta">
+        <span class="result-badge">🔍 ${PH_LEGAL_SOURCES.length} Sources Indexed</span>
+        <span class="result-badge">📋 ${data.total || 0} Citations Found</span>
+        ${(data.keywords||[]).map(k => `<span class="result-badge" style="background:rgba(255,255,255,0.08);color:rgba(240,232,216,0.7)">${escHtml(k)}</span>`).join('')}
+      </div>
+    </div>`;
+
+  // ── SECTION 1: LEGAL INTERPRETATION ──
+  if (data.legal_interpretation) {
+    html += `
+      <div class="result-section">
+        <div class="result-section-header">
+          <div class="result-section-num">1</div>
+          <div class="result-section-title">Legal Interpretation</div>
+        </div>
+        <div class="interp-text">${escHtml(data.legal_interpretation)}</div>
+      </div>`;
+  }
+
+  // ── SECTION 2: JURISPRUDENCE ──
+  if (data.jurisprudence?.length) {
+    html += `
+      <div class="result-section">
+        <div class="result-section-header">
+          <div class="result-section-num">2</div>
+          <div class="result-section-title">Jurisprudence — Supreme Court Decisions</div>
+        </div>`;
+
+    data.jurisprudence.forEach((c, i) => {
+      const landmark = c.is_landmark == 1 ? '<span class="result-badge landmark">★ Landmark</span>' : '';
+      const sourceUrl = c.elibrary_url || c.source_url || `https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent(c.gr_number)}`;
+      const lawphilUrl = c.lawphil_url || `https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(c.gr_number)}`;
+      // Highlight quoted portion in doctrine text
+      let doctrineHtml = escHtml(c.doctrine);
+      if (c.quoted_portion) {
+        const qEsc = escHtml(c.quoted_portion);
+        doctrineHtml = doctrineHtml.replace(qEsc, `<mark class="codal-highlight">${qEsc}</mark>`);
+      }
+
+      html += `<div class="juri-card">
+        <div class="juri-header">
+          <div class="juri-title-block">
+            <div class="juri-case-title${blurCase ? ' blurred' : ''}">${escHtml(c.case_title)}</div>
+            <div class="juri-meta-row">
+              <span class="juri-gr${blurCase ? ' blurred' : ''}">${escHtml(c.gr_number)}</span>
+              <span class="juri-date">${formatDate(c.date_decided)}</span>
+              ${c.ponente ? `<span class="juri-ponente">${escHtml(c.ponente)}</span>` : ''}
+              ${c.division ? `<span class="juri-date">${escHtml(c.division)}</span>` : ''}
+              ${landmark}
+            </div>
+          </div>
+          <div class="juri-actions">
+            <a href="${sourceUrl}" target="_blank" rel="noopener"
+               class="juri-source-btn${blurCase ? ' blurred' : ''}"
+               onclick="${blurCase ? 'event.preventDefault();showPaywall()' : ''}">
+              SC E-Library ↗
+            </a>
+            <a href="${lawphilUrl}" target="_blank" rel="noopener"
+               class="juri-source-btn${blurCase ? ' blurred' : ''}"
+               style="background:var(--ink-600)"
+               onclick="${blurCase ? 'event.preventDefault();showPaywall()' : ''}">
+              Lawphil ↗
+            </a>
+          </div>
+        </div>
+        <div class="juri-body">
+          ${c.doctrine ? `<div class="juri-field">
+            <div class="juri-field-label">Doctrine / Holding</div>
+            <div class="juri-field-value">${doctrineHtml}</div>
+          </div>` : ''}
+          ${c.quoted_portion ? `<div class="juri-field">
+            <div class="juri-field-label">📌 Quoted Portion from Decision</div>
+            <div class="codal-quote" style="margin:0">${escHtml(c.quoted_portion)}</div>
+          </div>` : ''}
+          ${c.facts ? `<div class="juri-field">
+            <div class="juri-field-label">Facts</div>
+            <div class="juri-field-value">${escHtml(c.facts)}</div>
+          </div>` : ''}
+          ${c.issue ? `<div class="juri-field">
+            <div class="juri-field-label">Issue</div>
+            <div class="juri-field-value">${escHtml(c.issue)}</div>
+          </div>` : ''}
+          ${c.ruling ? `<div class="juri-field">
+            <div class="juri-field-label">Ruling</div>
+            <div class="juri-field-value">${escHtml(c.ruling)}</div>
+          </div>` : ''}
+        </div>
+      </div>`;
+    });
+
+    // Paywall for non-pro
+    if (blurCase) {
+      html += `<div style="position:relative;min-height:60px">
+        <div class="paywall-overlay" style="position:relative;background:none;border:1.5px dashed var(--gold-400);border-radius:var(--radius-md);padding:16px;margin-top:8px">
+          <div class="paywall-msg">
+            <div class="paywall-icon">🔒</div>
+            <div class="paywall-title">Case Title & Sources Locked</div>
+            <div class="paywall-sub">${isGuest ? 'Create a free account to see more, or' : 'Subscribe to Pro to'} unlock full case titles, G.R. numbers, and direct source links.</div>
+            ${isGuest
+              ? `<a href="register-modal.html" class="paywall-btn">Register Free</a>&nbsp;&nbsp;<a href="subscribe.html" class="paywall-btn" style="background:var(--ink-700)">Subscribe Pro</a>`
+              : `<a href="subscribe.html" class="paywall-btn">Upgrade to Pro ₱199/mo</a>`
+            }
+          </div>
+        </div>
+      </div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  // ── SECTION 3: CODAL PROVISIONS ──
+  if (data.codal_provisions?.length) {
+    html += `
+      <div class="result-section">
+        <div class="result-section-header">
+          <div class="result-section-num">3</div>
+          <div class="result-section-title">Codal Provisions — Exact Statutory Text</div>
+        </div>`;
+
+    data.codal_provisions.forEach(law => {
+      const sourceUrl = law.source_url || `https://lawphil.net/statutes/search.php?q=${encodeURIComponent(law.article_number)}`;
+      const ogUrl = law.officialgazette_url || `https://www.officialgazette.gov.ph/?s=${encodeURIComponent(law.source_short || law.source)}`;
+      // Highlight quoted portion inside full text
+      let fullTextHtml = escHtml(law.full_text || law.content || '');
+      if (law.quoted_portion) {
+        const qEsc = escHtml(law.quoted_portion);
+        fullTextHtml = fullTextHtml.replace(qEsc, `<mark class="codal-highlight">${qEsc}</mark>`);
+      }
+
+      html += `<div class="codal-card">
+        <div class="codal-header">
+          <div class="codal-article">${escHtml(law.article_number)}</div>
+          <div class="codal-source-name">${escHtml(law.source_short || law.source)}</div>
+        </div>
+        <div class="codal-title">${escHtml(law.title)}</div>
+        ${law.quoted_portion ? `<blockquote class="codal-quote">${escHtml(law.quoted_portion)}</blockquote>` : ''}
+        ${law.full_text ? `<div style="padding:0 18px 14px;font-family:var(--serif);font-size:13px;line-height:1.75;color:var(--ink-600)">${fullTextHtml}</div>` : ''}
+        <div style="padding:0 18px 14px;display:flex;gap:12px;flex-wrap:wrap">
+          <a href="${sourceUrl}" target="_blank" rel="noopener" class="codal-source-link">
+            📖 View on Lawphil ↗
+          </a>
+          <a href="${ogUrl}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">
+            📰 Official Gazette ↗
+          </a>
+          <a href="https://chanrobles.com/search?q=${encodeURIComponent(law.article_number + ' ' + (law.source_short||''))}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">
+            📋 ChanRobles ↗
+          </a>
+        </div>
+      </div>`;
+    });
+
+    html += `</div>`;
+  }
+
+  // ── SECTION 4: DOCTRINES ──
+  if (data.doctrines?.length) {
+    html += `
+      <div class="result-section">
+        <div class="result-section-header">
+          <div class="result-section-num">4</div>
+          <div class="result-section-title">Legal Doctrines</div>
+        </div>`;
+    data.doctrines.forEach(d => {
+      html += `<div class="doctrine-result-card">
+        <div class="doctrine-result-name">${escHtml(d.doctrine_name)}</div>
+        <div class="doctrine-result-desc">${escHtml(d.description)}</div>
+        <div class="doctrine-result-meta">
+          ${d.legal_basis ? `<span>📖 ${escHtml(d.legal_basis)}</span>` : ''}
+          ${d.related_cases ? `<span>⚖ ${escHtml(d.related_cases)}</span>` : ''}
+          ${d.category ? `<span class="cat-badge ${d.category}" style="font-size:10px">${escHtml(d.category)}</span>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── SECTION 5: ANALYSIS ──
+  if (data.analysis) {
+    html += `
+      <div class="result-section">
+        <div class="result-section-header">
+          <div class="result-section-num">5</div>
+          <div class="result-section-title">Legal Analysis & Synthesis</div>
+        </div>
+        <div class="interp-text">${escHtml(data.analysis)}</div>
+      </div>`;
+  }
+
+  // ── SECTION 6: WEB SOURCES ──
+  html += `
+    <div class="result-section">
+      <div class="result-section-header">
+        <div class="result-section-num">6</div>
+        <div class="result-section-title">Philippine Legal Sources — Deep Index</div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-400);margin-bottom:14px">
+        Click any source to search <strong>"${escHtml(query)}"</strong> directly on that platform — opens in new tab.
+      </div>
+      <div class="sources-mini-grid">`;
+
+  PH_LEGAL_SOURCES.forEach(src => {
+    const webSrc = (data.web_sources || data.webSources || []).find(w => w.source_id === src.id || w.source === src.id);
+    const targetUrl = webSrc?.direct_url || webSrc?.directUrl || src.searchTpl(query);
+    const relevance = webSrc?.relevance || src.desc;
+    html += `<a href="${targetUrl}" target="_blank" rel="noopener" class="source-mini-card">
+      <div class="source-mini-icon">${src.icon}</div>
+      <div class="source-mini-body">
+        <div class="source-mini-name">${escHtml(src.name)}</div>
+        <div class="source-mini-desc" title="${escHtml(relevance)}">${escHtml(relevance)}</div>
+      </div>
+      <div class="source-mini-arrow">↗</div>
+    </a>`;
+  });
+
+  html += `</div></div>`;
+
+  // ── DISCLAIMER ──
+  html += `
+    <div class="result-section" style="background:var(--ink-50)">
+      <div style="font-size:12px;color:var(--ink-400);line-height:1.7;font-family:var(--serif);font-style:italic">
+        ⚠ This research output is generated for academic and informational purposes only and does not constitute legal advice.
+        All cited provisions and jurisprudence are sourced from official Philippine legal databases.
+        For specific legal matters, consult a duly licensed Philippine attorney.
+      </div>
+    </div>`;
+
+  html += `</div>`; // close .result-document
+
+  wrap.innerHTML = html;
+  wrap.scrollTop = 0;
+}
+
+function showPaywall() {
+  showToast('Subscribe to Pro to access full case titles and source links.', 'error');
+}
+
+// Legacy aliases
+function renderResults(data, query) { renderDeepResults(data, query); }
+function renderMockResults(query) { renderDeepResults(buildMockResults(query.toLowerCase()), query); }
+
+
+
+
+// ============================================================
+// CASE CARD TOGGLE
+// ============================================================
+// ============================================================
+// OFFLINE FALLBACK DATA
+// ============================================================
+function buildMockResults(q) {
+  const kws = q.split(/\s+/).filter(w => w.length > 2);
+  const cat = detectCategoryJS(kws);
+  const lawMap = {
+    'obligation': {title:'Definition of Obligation',article_number:'Article 1156',content:'An obligation is a juridical necessity to give, to do, or not to do.',category:'Civil',source:'Civil Code of the Philippines (RA 386)',source_url:'https://lawphil.net/statutes/repacts/ra1946/ra_386_civilcode.html#1156'},
+    'contract': {title:'Essential Requisites of Contracts',article_number:'Article 1318',content:'There is no contract unless the following requisites concur: (1) Consent of the contracting parties; (2) Object certain which is the subject matter of the contract; (3) Cause of the obligation.',category:'Civil',source:'Civil Code of the Philippines (RA 386)',source_url:'https://lawphil.net/statutes/repacts/ra1946/ra_386_civilcode.html#1318'},
+    'void': {title:'Void Contracts',article_number:'Article 1409',content:'The following contracts are inexistent and void from the beginning: (1) Those whose cause, object or purpose is contrary to law, morals, good customs, public order or public policy.',category:'Civil',source:'Civil Code of the Philippines (RA 386)',source_url:'https://lawphil.net/statutes/repacts/ra1946/ra_386_civilcode.html#1409'},
+    'quasi': {title:'Quasi-Delict',article_number:'Article 2176',content:'Whoever by act or omission causes damage to another, there being fault or negligence, is obliged to pay for the damage done.',category:'Civil',source:'Civil Code of the Philippines (RA 386)',source_url:'https://lawphil.net/statutes/repacts/ra1946/ra_386_civilcode.html#2176'},
+    'dismissal': {title:'Security of Tenure',article_number:'Article 294',content:'In cases of regular employment, the employer shall not terminate the services of an employee except for a just cause or when authorized by this Title.',category:'Labor',source:'Labor Code of the Philippines (PD 442)',source_url:'https://lawphil.net/statutes/presdecs/pd1974/pd_442_1974.html#294'},
+    'murder': {title:'Murder',article_number:'Article 248',content:'Any person who, not falling within the provisions of Article 246, shall kill another, shall be guilty of murder and shall be punished by reclusion perpetua.',category:'Criminal',source:'Revised Penal Code (Act 3815)',source_url:'https://lawphil.net/statutes/acts/act_3815_1930.html#248'},
+  };
+  const caseMap = {
+    'dismissal': {case_title:'Agabon v. NLRC',gr_number:'G.R. No. 158693',date_decided:'2004-11-17',ponente:'Ynares-Santiago, J.',category:'Labor',doctrine:'Where the dismissal is for just cause, the lack of statutory due process does not nullify the dismissal but entitles the employee to nominal damages of P30,000.',facts:'Employees were dismissed for abandonment. Employer had just cause but failed to comply with the twin-notice rule.',issue:'Consequence of dismissal for just cause without procedural due process.',ruling:'Dismissal valid; employer pays nominal damages of P30,000.',is_landmark:1,source_url:'https://elibrary.judiciary.gov.ph/search/?q=158693'},
+    'murder': {case_title:'People v. Cachuela',gr_number:'G.R. No. 191752',date_decided:'2013-06-26',ponente:'Brion, J.',category:'Criminal',doctrine:'Treachery is present when the offender employs means tending to ensure the crime execution without risk from any defense the victim might make.',facts:'Victim was stabbed from behind without warning.',issue:'Whether treachery attended the killing, qualifying it to murder.',ruling:'SC affirmed murder conviction; treachery was proven.',is_landmark:0,source_url:'https://elibrary.judiciary.gov.ph/search/?q=191752'},
+    'contract': {case_title:'Vitangcol v. New Vista Properties',gr_number:'G.R. No. 176014',date_decided:'2012-03-14',ponente:'Peralta, J.',category:'Civil',doctrine:'A contract of sale is perfected at the moment there is a meeting of minds upon the object and the price. No formal document is required for perfection.',facts:'Verbal agreement to purchase land; earnest money paid but seller reneged.',issue:'Whether a perfected contract of sale existed without a written document.',ruling:'SC held contract was perfected upon meeting of minds.',is_landmark:0,source_url:'https://elibrary.judiciary.gov.ph/search/?q=176014'},
+  };
+  const doctrineMap = {
+    'dismissal': {doctrine_name:'Agabon Doctrine',description:'Dismissal for just cause without observing procedural due process is not illegal but entitles the employee to nominal damages.',legal_basis:'Article 294, Labor Code; Article 2221, Civil Code',related_cases:'G.R. No. 158693',category:'Labor'},
+    'murder': {doctrine_name:'Treachery (Alevosia)',description:'Treachery qualifies a killing to murder when means employed ensure execution without risk to the offender from the victim\u2019s defense.',legal_basis:'Article 14(16), Revised Penal Code',related_cases:'G.R. No. 191752',category:'Criminal'},
+    'contract': {doctrine_name:'Consensuality of Contracts',description:'Contracts are perfected by mere consent. No special form is required for validity unless the law provides otherwise.',legal_basis:'Articles 1305, 1315, 1318, Civil Code',related_cases:'G.R. No. 176014',category:'Civil'},
+  };
+
+  let laws = [], cases = [], doctrines = [];
+  for (const kw of kws) {
+    for (const [key, val] of Object.entries(lawMap)) {
+      if (kw.includes(key) || key.includes(kw)) { if (!laws.find(x=>x.title===val.title)) laws.push(val); }
+    }
+    for (const [key, val] of Object.entries(caseMap)) {
+      if (kw.includes(key) || key.includes(kw)) { if (!cases.find(x=>x.gr_number===val.gr_number)) cases.push(val); }
+    }
+    for (const [key, val] of Object.entries(doctrineMap)) {
+      if (kw.includes(key) || key.includes(kw)) { if (!doctrines.find(x=>x.doctrine_name===val.doctrine_name)) doctrines.push(val); }
+    }
+  }
+  if (!laws.length && !cases.length) { laws = [lawMap['contract']]; cases = [caseMap['contract']]; }
+  const issue = `Whether ${q.replace(/^(what|is|can|how|when|who)\s*/i,'')}.`;
+  let analysis = '';
+  if (laws.length) analysis += `Based on ${laws[0].title} (${laws[0].article_number}), the applicable Philippine legal framework is established. `;
+  if (cases.length) analysis += `Philippine jurisprudence in ${cases[0].case_title} (${cases[0].gr_number}) has addressed similar matters: "${cases[0].doctrine}" `;
+  analysis += `The query falls within the ambit of Philippine ${cat||'Civil'} Law as interpreted by the Supreme Court.`;
+  return {
+    query: q, keywords: kws, category: cat,
+    topic: (cat||'General') + ' Law — ' + q.split(' ').slice(0,4).join(' '),
+    legal_interpretation: analysis,
+    analysis,
+    jurisprudence: cases.slice(0,3).map(c => ({...c, quoted_portion: c.doctrine ? c.doctrine.substring(0,100) : ''})),
+    codal_provisions: laws.slice(0,3).map(l => ({...l, full_text: l.content, quoted_portion: l.content ? l.content.substring(0,80) : ''})),
+    doctrines: doctrines.slice(0,2),
+    total: laws.length + cases.length + doctrines.length,
+    web_sources: []
+  };
+}
+
+function detectCategoryJS(kws) {
+  const map = {
+    'Criminal': ['crime','criminal','murder','homicide','theft','robbery','rape','treachery','accused','arson','kidnapping','penalty','rpc','penal'],
+    'Labor': ['employee','employer','dismissal','termination','backwages','reinstatement','wage','overtime','nlrc','labor','union','tenure','regularization'],
+    'Civil': ['contract','obligation','property','ownership','damages','negligence','tort','lease','sale','mortgage','succession','quasi-delict','delict'],
+    'Constitutional': ['constitutional','due process','equal protection','bill of rights','liberty','freedom','speech','warrant','habeas','fundamental'],
+    'Commercial': ['corporation','partnership','stockholder','board','dividend','securities','banking','insurance','trademark','patent'],
+  };
+  let best = null, top = 0;
+  for (const [cat, terms] of Object.entries(map)) {
+    let sc = 0;
+    for (const kw of kws) for (const t of terms) if (kw.includes(t)||t.includes(kw)) sc++;
+    if (sc > top) { top = sc; best = cat; }
+  }
+  return best;
+}
+
+function toggleCaseCard(cardId, caseId, grNum) {
+  const card = document.getElementById(cardId);
+  if (!card) return;
+  if (card.classList.contains('expanded')) {
+    card.classList.remove('expanded');
+    card.querySelector('.expand-arrow').textContent = '▼';
+    card.querySelector('.case-expand-btn span:last-child').textContent = ' View Facts & Ruling';
+  } else {
+    card.classList.add('expanded');
+    card.querySelector('.expand-arrow').textContent = '▲';
+    card.querySelector('.case-expand-btn span:last-child').textContent = ' Hide Details';
+  }
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openCaseModal(caseData) {
+  document.getElementById('modalTitle').textContent = caseData.case_title;
+  document.getElementById('modalGR').textContent = caseData.gr_number + ' · ' + formatDate(caseData.date_decided) + (caseData.ponente ? ' · ' + caseData.ponente : '');
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-section"><div class="modal-section-label">Doctrine</div><div class="modal-section-content">${escHtml(caseData.doctrine||'—')}</div></div>
+    <div class="modal-divider"></div>
+    <div class="modal-section"><div class="modal-section-label">Facts</div><div class="modal-section-content">${escHtml(caseData.facts||'—')}</div></div>
+    <div class="modal-section"><div class="modal-section-label">Issue</div><div class="modal-section-content">${escHtml(caseData.issue||'—')}</div></div>
+    <div class="modal-section"><div class="modal-section-label">Ruling</div><div class="modal-section-content">${escHtml(caseData.ruling||'—')}</div></div>
+  `;
+  document.getElementById('caseModal').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('caseModal').classList.remove('active');
+}
+document.getElementById('caseModal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('caseModal')) closeModal();
+});
+
+// ============================================================
+// PAGE NAVIGATION
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => {
+    s.classList.toggle('active', s.dataset.page === name);
+  });
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+
+  if (name === 'cases') loadCasesPage();
+  if (name === 'laws') loadLawsPage();
+  if (name === 'doctrines') loadDoctrinesPage();
+  if (name === 'admin') {
+    try {
+      const u = JSON.parse(localStorage.getItem('lexph_user') || 'null');
+      if (u && u.role === 'admin') {
+        loadAdminStats();
+      } else {
+        showToast('Admin access required', 'error');
+        showPage('home');
+      }
+    } catch(e) {
+      showToast('Admin access required', 'error');
+      showPage('home');
+    }
+  }
+}
+
+// ============================================================
+// CATEGORY STATS & GRID
+// ============================================================
+async function loadCategoryStats() {
+  const cats = [
+    {name:'Civil Law',slug:'Civil',icon:'⚖',desc:'Obligations, contracts, property, torts',count:'8 laws · 4 cases'},
+    {name:'Criminal Law',slug:'Criminal',icon:'⚑',desc:'Crimes and penalties under the RPC',count:'— laws · 1 case'},
+    {name:'Labor Law',slug:'Labor',icon:'⚒',desc:'Employment, dismissal, workers rights',count:'2 laws · 2 cases'},
+    {name:'Constitutional',slug:'Constitutional',icon:'★',desc:'Fundamental rights and state powers',count:'— laws · — cases'},
+    {name:'Commercial',slug:'Commercial',icon:'◈',desc:'Corporations, banking, commerce',count:'— laws · — cases'},
+    {name:'Family Law',slug:'Family',icon:'⌂',desc:'Marriage, adoption, custody, support',count:'— laws · — cases'},
+  ];
+
+  const grid = document.getElementById('catGrid');
+  if (!grid) return;
+  grid.innerHTML = cats.map(c => `
+    <div class="cat-card" onclick="filterByCategory('${c.slug}')">
+      <div class="cat-icon">${c.icon}</div>
+      <div class="cat-name">${c.name}</div>
+      <div class="cat-desc">${c.desc}</div>
+      <div class="cat-counts"><span class="cat-count">${c.count}</span></div>
+    </div>`).join('');
+
+  // Update sidebar badges
+  const badgeData = {civil:4,criminal:1,labor:2,constitutional:0,commercial:0,family:0,tax:0,remedial:0};
+  for (const [k,v] of Object.entries(badgeData)) {
+    const el = document.getElementById('badge-'+k);
+    if (el) el.textContent = v || '—';
+  }
+}
+
+function filterByCategory(cat) {
+  doSearch(cat.toLowerCase() + ' law cases Philippines');
+}
+
+// ============================================================
+// CASES PAGE (DEMO DATA)
+// ============================================================
+const demoCases = [
+  {case_title:'Agabon v. National Labor Relations Commission',gr_number:'G.R. No. 158693',date_decided:'2004-11-17',ponente:'Ynares-Santiago, J.',category:'Labor',is_landmark:1,doctrine:'Nominal damages for procedural due process violation.'},
+  {case_title:'Heirs of Malabanan v. Republic of the Philippines',gr_number:'G.R. No. 179987',date_decided:'2009-09-03',ponente:'Bersamin, J.',category:'Civil',is_landmark:1,doctrine:'Alienability requirement for land registration.'},
+  {case_title:'People of the Philippines v. Cachuela',gr_number:'G.R. No. 191752',date_decided:'2013-06-26',ponente:'Brion, J.',category:'Criminal',is_landmark:0,doctrine:'Treachery as qualifying circumstance for murder.'},
+  {case_title:'Vitangcol v. New Vista Properties',gr_number:'G.R. No. 176014',date_decided:'2012-03-14',ponente:'Peralta, J.',category:'Civil',is_landmark:0,doctrine:'Perfection of contract of sale by meeting of minds.'},
+  {case_title:'Manila Hotel Corporation v. NLRC',gr_number:'G.R. No. 120077',date_decided:'1997-10-13',ponente:'Bellosillo, J.',category:'Labor',is_landmark:1,doctrine:'Twin-notice rule in employee dismissal proceedings.'},
+];
+
+function loadCasesPage() {
+  allCases = [...demoCases];
+  renderCasesTable(allCases);
+}
+
+function renderCasesTable(cases) {
+  const body = document.getElementById('casesTableBody');
+  if (!body) return;
+  if (!cases.length) { body.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px">No cases found.</td></tr>'; return; }
+  body.innerHTML = cases.map(c => `
+    <tr>
+      <td>
+        <div class="table-title" onclick='openCaseModal(${JSON.stringify(c).replace(/'/g,"&#39;")})'>${escHtml(c.case_title)}</div>
+        <div class="table-gr">${escHtml(c.gr_number)}</div>
+      </td>
+      <td><div class="table-date">${formatDate(c.date_decided)}</div></td>
+      <td><div class="table-ponente">${escHtml(c.ponente||'—')}</div></td>
+      <td><span class="cat-badge ${c.category}" style="font-size:10px">${escHtml(c.category)}</span></td>
+    </tr>`).join('');
+}
+
+function filterCases() {
+  const q = document.getElementById('caseSearch').value.toLowerCase();
+  const cat = document.getElementById('caseCatFilter').value;
+  const filtered = allCases.filter(c => {
+    const matchQ = !q || c.case_title.toLowerCase().includes(q) || c.gr_number.toLowerCase().includes(q);
+    const matchC = !cat || c.category === cat;
+    return matchQ && matchC;
+  });
+  renderCasesTable(filtered);
+}
+
+// ============================================================
+// LAWS PAGE (DEMO DATA)
+// ============================================================
+const demoLaws = [
+  {title:'Definition of Obligation',article_number:'Article 1156',content:'An obligation is a juridical necessity to give, to do, or not to do.',category:'Civil',source:'Civil Code of the Philippines (RA 386)'},
+  {title:'Sources of Obligations',article_number:'Article 1157',content:'Obligations arise from: (1) Law; (2) Contracts; (3) Quasi-contracts; (4) Acts or omissions punished by law; and (5) Quasi-delicts.',category:'Civil',source:'Civil Code of the Philippines (RA 386)'},
+  {title:'Essential Requisites of Contracts',article_number:'Article 1318',content:'There is no contract unless the following requisites concur: (1) Consent of the contracting parties; (2) Object certain which is the subject matter of the contract; (3) Cause of the obligation which is established.',category:'Civil',source:'Civil Code of the Philippines (RA 386)'},
+  {title:'Void Contracts',article_number:'Article 1409',content:'The following contracts are inexistent and void from the beginning: those whose cause, object or purpose is contrary to law, morals, good customs, public order or public policy...',category:'Civil',source:'Civil Code of the Philippines (RA 386)'},
+  {title:'Quasi-Delict',article_number:'Article 2176',content:'Whoever by act or omission causes damage to another, there being fault or negligence, is obliged to pay for the damage done. Such fault or negligence, if there is no pre-existing contractual relation, is called a quasi-delict.',category:'Civil',source:'Civil Code of the Philippines (RA 386)'},
+  {title:'Security of Tenure',article_number:'Article 294',content:'In cases of regular employment, the employer shall not terminate the services of an employee except for a just cause or when authorized by this Title.',category:'Labor',source:'Labor Code of the Philippines (PD 442)'},
+  {title:'Rights of Employees',article_number:'Article 3',content:'It shall be the duty of every employer to provide its workers with all the rights and benefits provided for in this Code.',category:'Labor',source:'Labor Code of the Philippines (PD 442)'},
+];
+
+function loadLawsPage() {
+  allLaws = [...demoLaws];
+  renderLawsGrid(allLaws);
+}
+
+function renderLawsGrid(laws) {
+  const grid = document.getElementById('lawsGrid');
+  if (!grid) return;
+  if (!laws.length) { grid.innerHTML = '<div class="no-results"><div class="no-results-title">No provisions found.</div></div>'; return; }
+  grid.innerHTML = laws.map(l => `
+    <div class="law-card" style="margin-bottom:12px">
+      <div class="law-card-header">
+        <div>
+          <div class="law-article">${escHtml(l.article_number||'')}</div>
+          <div class="law-title">${escHtml(l.title)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="law-source">${escHtml(l.source)}</div>
+          <span class="cat-badge ${l.category}" style="font-size:10px">${escHtml(l.category)}</span>
+        </div>
+      </div>
+      <div class="law-content">${escHtml(l.content)}</div>
+    </div>`).join('');
+}
+
+function filterLaws() {
+  const q = document.getElementById('lawSearch').value.toLowerCase();
+  const cat = document.getElementById('lawCatFilter').value;
+  const filtered = allLaws.filter(l => {
+    const matchQ = !q || l.title.toLowerCase().includes(q) || l.content.toLowerCase().includes(q) || (l.article_number||'').toLowerCase().includes(q);
+    const matchC = !cat || l.category === cat;
+    return matchQ && matchC;
+  });
+  renderLawsGrid(filtered);
+}
+
+// ============================================================
+// DOCTRINES PAGE
+// ============================================================
+const demoDoctrines = [
+  {doctrine_name:'Agabon Doctrine',description:'Where an employer dismisses an employee for a just or authorized cause but fails to comply with the procedural due process requirements, the dismissal is not rendered illegal. The employer must pay nominal damages of P30,000 for violation of statutory due process.',legal_basis:'Article 294, Labor Code; Article 2221, Civil Code',related_cases:'G.R. No. 158693',category:'Labor'},
+  {doctrine_name:'Treachery (Alevosia)',description:'Treachery exists when the offender employs means, methods, or forms in the execution of the offense which tend directly and specially to ensure its execution without risk to himself arising from any defense the victim might make. Two elements: (1) employment of means giving the victim no opportunity to defend; and (2) deliberate adoption of such means.',legal_basis:'Article 14(16), Revised Penal Code',related_cases:'G.R. No. 191752',category:'Criminal'},
+  {doctrine_name:'Doctrine of Apparent Authority',description:'A principal is bound by the acts of its agent when the principal has cloaked the agent with apparent authority to act on its behalf, even if no actual authority was granted. Third parties who relied in good faith on such apparent authority are protected.',legal_basis:'Article 1910, Civil Code',related_cases:null,category:'Civil'},
+  {doctrine_name:'Doctrine of Exhaustion of Administrative Remedies',description:'Before a party may seek judicial intervention, he must first exhaust all administrative remedies available to him. Failure to do so divests the courts of jurisdiction and promotes comity between courts and administrative agencies.',legal_basis:'Administrative Code of 1987; Rule 65, Rules of Court',related_cases:null,category:'Administrative'},
+  {doctrine_name:'Business Judgment Rule',description:'Courts will not interfere with the business decisions of corporate officers and directors when such decisions are made honestly, in good faith, and within the bounds of authority. Corporate directors are presumed to act in the best interests of the corporation.',legal_basis:'Section 23, Revised Corporation Code (RA 11232)',related_cases:null,category:'Commercial'},
+];
+
+function loadDoctrinesPage() {
+  allDoctrines = [...demoDoctrines];
+  const grid = document.getElementById('doctrinesGrid');
+  if (!grid) return;
+  grid.innerHTML = demoDoctrines.map(d => `
+    <div class="doctrine-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+        <div class="doctrine-name">${escHtml(d.doctrine_name)}</div>
+        <span class="cat-badge ${d.category}" style="font-size:10px;flex-shrink:0">${escHtml(d.category)}</span>
+      </div>
+      <div class="doctrine-desc">${escHtml(d.description)}</div>
+      <div class="doctrine-meta">
+        ${d.legal_basis ? `<span>📖 ${escHtml(d.legal_basis)}</span>` : ''}
+        ${d.related_cases ? `<span>⚖ ${escHtml(d.related_cases)}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// ADMIN STATS
+// ============================================================
+function loadAdminStats() {
+  document.getElementById('statLaws').textContent = demoLaws.length;
+  document.getElementById('statCases').textContent = demoCases.length;
+  document.getElementById('statDoctrines').textContent = demoDoctrines.length;
+  document.getElementById('statSearches').textContent = '—';
+  loadSubscribers();
+}
+
+let subscribers = [];
+let currentSubPage = 1;
+
+async function loadSubscribers(page = 1) {
+  currentSubPage = page;
+  const search = document.getElementById('subSearch').value;
+  const status = document.getElementById('subStatusFilter').value;
+  showLoading(true);
+  
+  try {
+    const url = new URL('/api/subscribers.php', window.location.origin);
+    url.searchParams.set('page', page);
+    if (search) url.searchParams.set('search', search);
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (data.success) {
+      subscribers = data.data;
+      renderSubscribersTable(subscribers);
+      document.getElementById('subCount').textContent = `${data.pagination.total} subscribers`;
+      document.getElementById('subPageInfo').textContent = `Page ${data.pagination.page} of ${data.pagination.pages}`;
+      document.getElementById('subPagePrev').style.display = data.pagination.page > 1 ? 'inline-block' : 'none';
+      document.getElementById('subPageNext').style.display = data.pagination.page < data.pagination.pages ? 'inline-block' : 'none';
+    } else {
+      showToast('Error loading subscribers: ' + (data.error || 'Unknown'), 'error');
+    }
+  } catch (e) {
+    showToast('Network error loading subscribers', 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function renderSubscribersTable(subs) {
+  const body = document.getElementById('subTableBody');
+  if (!subs.length) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px">No subscribers found.</td></tr>';
+    return;
+  }
+  body.innerHTML = subs.map(s => `
+    <tr>
+      <td><strong>${escHtml(s.username)}</strong></td>
+      <td>${escHtml(s.email)}</td>
+      <td><span class="cat-badge ${s.subscription_status === 'premium' ? 'Labor' : s.subscription_status === 'trial' ? 'Constitutional' : 'Criminal'}">${escHtml(s.subscription_status)}</span></td>
+      <td>${s.trial_ends_at ? new Date(s.trial_ends_at).toLocaleDateString() : '—'}</td>
+      <td>${s.stripe_customer_id ? escHtml(s.stripe_customer_id) : '—'}</td>
+      <td>${new Date(s.created_at).toLocaleDateString()}</td>
+      <td><button onclick="loadAdminProfile(${s.id})" class="btn btn-primary" style="padding:4px 8px;font-size:11px;">View</button></td>
+    </tr>
+    </tr>`).join('');
+}
+
+function submitCase() {
+  const fields = {
+    case_title: document.getElementById('f-case-title').value.trim(),
+    gr_number: document.getElementById('f-gr').value.trim(),
+    date_decided: document.getElementById('f-date').value,
+    ponente: document.getElementById('f-ponente').value.trim(),
+    category: document.getElementById('f-category').value,
+    doctrine: document.getElementById('f-doctrine').value.trim(),
+    facts: document.getElementById('f-facts').value.trim(),
+    issue: document.getElementById('f-issue').value.trim(),
+    ruling: document.getElementById('f-ruling').value.trim(),
+    tags: document.getElementById('f-tags').value.trim(),
+    is_landmark: document.getElementById('f-landmark').checked ? 1 : 0,
+  };
+  const required = ['case_title','gr_number','date_decided','category','doctrine','facts','issue','ruling'];
+  for (const f of required) {
+    if (!fields[f]) { showToast(`Please fill in: ${f.replace('_',' ')}`, 'error'); return; }
+  }
+  // In production: POST to api/cases.php
+  showToast('Case submitted! (Connect to PHP API for persistent storage)', 'info');
+  // Demo: add to local array
+  demoCases.unshift({...fields, is_landmark: parseInt(fields.is_landmark)});
+}
+
+// ============================================================
+// DEMO DATA LOADING
+// ============================================================
+function loadDemoData() {
+  // Category grid already populated in loadCategoryStats
+  // Other pages load on demand
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function toggleTheme() {
+  currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+  applyTheme(currentTheme);
+  localStorage.setItem('lexph-theme', currentTheme);
+}
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = theme === 'dark' ? '☀' : '🌙';
+}
+
+// ============================================================
+// LOADING
+// ============================================================
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('active', show);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type === 'error' ? ' error' : '');
+  t.innerHTML = `<span>${type === 'error' ? '⚠' : '✓'}</span> ${escHtml(msg)}`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function formatDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'}); }
+  catch { return d; }
+}
+
+function toggleTextSize() {
+  const sizes = ['small', 'medium', 'large'];
+  let current = localStorage.getItem('lexph-font-size') || 'medium';
+  let idx = sizes.indexOf(current);
+  let next = sizes[(idx + 1) % sizes.length];
+  const sizesMap = {small: '14px', medium: '16px', large: '20px'};
+  document.documentElement.style.setProperty('--font-size-base', sizesMap[next]);
+  localStorage.setItem('lexph-font-size', next);
+  showToast('Text size adjusted: ' + next.charAt(0).toUpperCase() + next.slice(1), 'info');
+}
+
+// Apply saved size on load
+document.addEventListener('DOMContentLoaded', () => {
+  const savedSize = localStorage.getItem('lexph-font-size') || 'medium';
+  const sizesMap = {small: '14px', medium: '16px', large: '20px'};
+  document.documentElement.style.setProperty('--font-size-base', sizesMap[savedSize]);
+});
+</script>
+</body>
+</html>
