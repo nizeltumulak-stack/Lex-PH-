@@ -3,32 +3,24 @@
  * ─────────────────────────────────────────────────────────────
  * Drop this into every HTML page before other scripts:
  *   <script src="lexph-client.js"></script>
- *
- * Set your live URLs in the CONFIG block below once deployed.
- * Until then, it falls back to localStorage automatically.
  * ─────────────────────────────────────────────────────────────
  */
 
 const LEXPH_CONFIG = {
-  // ── Fill these in after deploying ──────────────────────────
   // Cloudflare Worker URL for Anthropic API proxy
-  WORKER_PROXY_URL: '',   // e.g. 'https://lexph-proxy.yourname.workers.dev'
+  WORKER_PROXY_URL: 'https://lexph-api-proxy.nizeltumulak.workers.dev',
 
-  // Supabase Edge Function base URL
-  AUTH_API_URL: '',       // e.g. 'https://xxxx.supabase.co/functions/v1/lexph-auth'
+  // Cloudflare Worker Auth API URL
+  AUTH_API_URL: 'https://lexph-auth.nizeltumulak.workers.dev',
 
-  // Webhook / subscription verification URL
-  WEBHOOK_URL: '',        // e.g. 'https://xxxx.supabase.co/functions/v1/lexph-webhook'
-  // ───────────────────────────────────────────────────────────
+  // Cloudflare Worker Webhook URL
+  WEBHOOK_URL: 'https://lexph-webhook.nizeltumulak.workers.dev',
 
-  USE_BACKEND: false,     // Auto-set to true when URLs above are filled
+  // Render Backend URL
+  BACKEND_URL: 'https://lex-ph-backend.onrender.com',
+
+  USE_BACKEND: true,
 };
-
-// Auto-detect if backend is configured
-LEXPH_CONFIG.USE_BACKEND = !!(
-  LEXPH_CONFIG.WORKER_PROXY_URL &&
-  LEXPH_CONFIG.AUTH_API_URL
-);
 
 // ── Token management ────────────────────────────────────────
 const LexPHAuth = {
@@ -75,7 +67,6 @@ async function lexphPost(endpoint, body, auth = false) {
 // ── REGISTER ────────────────────────────────────────────────
 async function lexphRegister(username, email, password) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
-    // localStorage fallback
     const accounts = JSON.parse(localStorage.getItem('lexph_accounts') || '[]');
     if (accounts.find(a => a.username === username)) return { error: 'Username already taken.' };
     if (accounts.find(a => a.email === email)) return { error: 'Email already registered.' };
@@ -97,12 +88,10 @@ async function lexphRegister(username, email, password) {
 // ── LOGIN ────────────────────────────────────────────────────
 async function lexphLogin(username, password) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
-    // localStorage fallback
     const accounts = JSON.parse(localStorage.getItem('lexph_accounts') || '[]');
     let user = accounts.find(u =>
       (u.username === username || u.email === username) && u.password === password
     );
-    // Demo accounts
     if (!user) {
       const demo = [
         { username: 'admin', password: 'admin123', role: 'admin', full_name: 'Admin', email: 'admin@lexph.com' },
@@ -132,7 +121,6 @@ function lexphLogout() {
 // ── SUBMIT SUBSCRIPTION ──────────────────────────────────────
 async function lexphSubscribe(subscriptionData) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
-    // localStorage fallback
     localStorage.setItem('lexph_subscription', JSON.stringify({
       ...subscriptionData,
       status: 'pending',
@@ -148,7 +136,6 @@ async function lexphSubscribe(subscriptionData) {
 
   const data = await lexphPost('subscribe', subscriptionData, true);
   if (data.success) {
-    // Refresh user to pick up pending subscription
     const user = LexPHAuth.getUser();
     if (user) {
       user.subscription = { status: 'pending', plan: subscriptionData.plan };
@@ -160,9 +147,7 @@ async function lexphSubscribe(subscriptionData) {
 
 // ── ANTHROPIC PROXY ──────────────────────────────────────────
 async function lexphAISearch(messages, system) {
-  const url = LEXPH_CONFIG.USE_BACKEND && LEXPH_CONFIG.WORKER_PROXY_URL
-    ? LEXPH_CONFIG.WORKER_PROXY_URL
-    : 'https://api.anthropic.com/v1/messages';
+  const url = LEXPH_CONFIG.WORKER_PROXY_URL;
 
   const res = await fetch(url, {
     method: 'POST',
