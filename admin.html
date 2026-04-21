@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexPH — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0b08;
+  --bg2: #141109;
+  --bg3: #1c1710;
+  --bg4: #231e14;
+  --gold: #c4a055;
+  --gold2: #9a7c3e;
+  --gold3: #f5eab8;
+  --red: #b83224;
+  --red2: #fce8e5;
+  --green: #2a6b60;
+  --green2: #e0f0ee;
+  --blue: #1a5276;
+  --blue2: #e8f4fc;
+  --text: #f0e8d8;
+  --text2: #c5b8a8;
+  --text3: #8a7b6a;
+  --border: rgba(196,160,85,0.15);
+  --border2: rgba(196,160,85,0.08);
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --display: 'Playfair Display', Georgia, serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 8px;
+  --radius2: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+.sidebar-brand {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid var(--border2);
+}
+.brand-name { font-family: var(--display); font-size: 16px; font-weight: 700; color: var(--gold3); }
+.brand-sub { font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gold); margin-top: 2px; }
+.admin-badge {
+  display: inline-block; margin-top: 8px;
+  padding: 2px 8px; border-radius: 20px;
+  background: rgba(184,50,36,0.2); color: var(--red);
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+  border: 1px solid rgba(184,50,36,0.3);
+}
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-section-label {
+  padding: 12px 16px 4px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text3); font-weight: 600;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; cursor: pointer;
+  color: var(--text3); font-size: 13px; font-weight: 400;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+}
+.nav-item:hover { color: var(--text); background: rgba(196,160,85,0.05); }
+.nav-item.active { color: var(--gold); border-left-color: var(--gold); background: rgba(196,160,85,0.08); font-weight: 500; }
+.nav-item .badge {
+  margin-left: auto; font-size: 10px; font-weight: 700;
+  background: var(--red); color: white;
+  padding: 1px 6px; border-radius: 10px;
+}
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border2);
+  font-size: 12px; color: var(--text3);
+}
+.sidebar-footer a { color: var(--gold); text-decoration: none; }
+
+/* MAIN */
+.main { margin-left: 220px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* TOPBAR */
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.page-title { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--text); }
+.topbar-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn {
+  padding: 7px 14px; border-radius: var(--radius);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.2s; font-family: var(--sans);
+}
+.btn-primary { background: var(--gold2); color: white; }
+.btn-primary:hover { background: var(--gold); }
+.btn-danger { background: rgba(184,50,36,0.15); color: var(--red); border: 1px solid rgba(184,50,36,0.3); }
+.btn-danger:hover { background: rgba(184,50,36,0.25); }
+.btn-success { background: rgba(42,107,96,0.15); color: #2a9d8f; border: 1px solid rgba(42,107,96,0.3); }
+.btn-success:hover { background: rgba(42,107,96,0.25); }
+.btn-ghost { background: rgba(255,255,255,0.05); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* CONTENT */
+.content { padding: 24px 28px; flex: 1; }
+
+/* PANELS */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* STATS GRID */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--radius2); padding: 20px;
+}
+.stat-value { font-family: var(--display); font-size: 28px; font-weight: 700; color: var(--gold3); }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-top: 4px; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 6px; }
+.stat-sub span { color: #2a9d8f; font-weight: 600; }
+
+/* SECTION HEADER */
+.section-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.section-title { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--text); }
+.section-line { flex: 1; height: 1px; background: var(--border2); }
+
+/* TABLE */
+.table-wrap { background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius2); overflow: hidden; margin-bottom: 24px; }
+.table-controls {
+  padding: 12px 16px; border-bottom: 1px solid var(--border2);
+  display: flex; gap: 10px; align-items: center;
+}
+.table-search {
+  flex: 1; max-width: 280px;
+  padding: 7px 12px; background: var(--bg4); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 12px; font-family: var(--sans);
+}
+.table-search:focus { outline: none; border-color: var(--gold2); }
+.table-filter {
+  padding: 7px 12px; background: var(--bg4); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 12px; font-family: var(--sans); cursor: pointer;
+}
+table { width: 100%; border-collapse: collapse; }
+th {
+  padding: 10px 14px; text-align: left;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--text3); font-weight: 600;
+  border-bottom: 1px solid var(--border2);
+  background: var(--bg4);
+}
+td {
+  padding: 12px 14px; font-size: 12px; color: var(--text2);
+  border-bottom: 1px solid var(--border2);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(196,160,85,0.03); }
+
+/* STATUS BADGES */
+.status {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.status.pending { background: rgba(196,160,85,0.15); color: var(--gold); border: 1px solid rgba(196,160,85,0.3); }
+.status.active { background: rgba(42,107,96,0.15); color: #2a9d8f; border: 1px solid rgba(42,107,96,0.3); }
+.status.rejected { background: rgba(184,50,36,0.15); color: var(--red); border: 1px solid rgba(184,50,36,0.3); }
+.status.free { background: rgba(138,123,106,0.15); color: var(--text3); border: 1px solid rgba(138,123,106,0.2); }
+.status.pro { background: rgba(196,160,85,0.2); color: var(--gold3); border: 1px solid rgba(196,160,85,0.4); }
+
+/* AI BADGE */
+.ai-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600;
+}
+.ai-badge.high-valid { background: rgba(42,107,96,0.15); color: #2a9d8f; }
+.ai-badge.low { background: rgba(196,160,85,0.1); color: var(--gold); }
+.ai-badge.invalid { background: rgba(184,50,36,0.1); color: var(--red); }
+
+/* ACTION BUTTONS */
+.action-btns { display: flex; gap: 6px; }
+
+/* FORM */
+.form-card {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--radius2); padding: 24px; margin-bottom: 20px;
+}
+.form-title { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.form-grid.full { grid-template-columns: 1fr; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.span2 { grid-column: 1 / -1; }
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); }
+.form-input, .form-select, .form-textarea {
+  padding: 9px 12px; background: var(--bg4); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-size: 13px; font-family: var(--sans);
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none; border-color: var(--gold2);
+  box-shadow: 0 0 0 3px rgba(154,124,62,0.1);
+}
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select { cursor: pointer; }
+
+/* DETAIL MODAL */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius2); max-width: 600px; width: 95%;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.modal-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--border2);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.modal-title { font-family: var(--display); font-size: 16px; font-weight: 600; color: var(--text); }
+.modal-close {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  color: var(--text3); font-size: 18px; padding: 2px 6px;
+}
+.modal-body { padding: 20px 24px; }
+.detail-row {
+  display: flex; gap: 12px; padding: 8px 0;
+  border-bottom: 1px solid var(--border2); font-size: 13px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label { color: var(--text3); font-weight: 600; min-width: 140px; flex-shrink: 0; }
+.detail-value { color: var(--text); }
+.modal-actions { padding: 16px 24px; border-top: 1px solid var(--border2); display: flex; gap: 10px; }
+
+/* TOAST */
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 18px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 500;
+  animation: slideIn 0.3s ease;
+  max-width: 320px;
+}
+.toast.success { background: #1a4a42; color: #a9dfbf; border: 1px solid rgba(42,107,96,0.4); }
+.toast.error { background: #4a1a14; color: #f5b7b1; border: 1px solid rgba(184,50,36,0.4); }
+.toast.info { background: var(--bg4); color: var(--text2); border: 1px solid var(--border); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* LOADING */
+.loading-spinner {
+  display: inline-block; width: 16px; height: 16px;
+  border: 2px solid rgba(196,160,85,0.2); border-top-color: var(--gold);
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center; padding: 48px 24px; color: var(--text3);
+}
+.empty-state-icon { font-size: 32px; margin-bottom: 12px; }
+.empty-state-text { font-size: 14px; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar .brand-name, .sidebar .brand-sub, .sidebar .admin-badge, .nav-section-label { display: none; }
+  .main { margin-left: 60px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">LexPH</div>
+    <div class="brand-sub">Admin Panel</div>
+    <div class="admin-badge">🔐 Admin</div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Overview</div>
+    <div class="nav-item active" onclick="showPanel('dashboard')">📊 Dashboard</div>
+
+    <div class="nav-section-label">Payments</div>
+    <div class="nav-item" onclick="showPanel('pending')" id="nav-pending">
+      ⏳ Pending Approvals
+      <span class="badge" id="pendingBadge" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="showPanel('subscribers')">👥 Subscribers</div>
+
+    <div class="nav-section-label">Content</div>
+    <div class="nav-item" onclick="showPanel('cases')">⚖ Cases</div>
+    <div class="nav-item" onclick="showPanel('laws')">📖 Laws</div>
+    <div class="nav-item" onclick="showPanel('doctrines')">📚 Doctrines</div>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="index.html">← Back to Site</a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-actions">
+      <span id="adminUser" style="font-size:12px;color:var(--text3);margin-right:8px;"></span>
+      <button class="btn btn-ghost" onclick="refreshData()">🔄 Refresh</button>
+      <button class="btn btn-danger" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">Total Subscribers</div>
+          <div class="stat-sub"><span id="statPro">—</span> Pro users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statPending">—</div>
+          <div class="stat-label">Pending Approvals</div>
+          <div class="stat-sub">Awaiting review</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statRevenue">—</div>
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-sub">From active subs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statCases">—</div>
+          <div class="stat-label">Cases in DB</div>
+          <div class="stat-sub">Supreme Court decisions</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Recent Pending Payments</div>
+        <div class="section-line"></div>
+        <button class="btn btn-ghost" onclick="showPanel('pending')">View All →</button>
+      </div>
+      <div class="table-wrap" id="recentPendingWrap">
+        <div class="empty-state"><div class="loading-spinner"></div> Loading…</div>
+      </div>
+    </div>
+
+    <!-- PENDING APPROVALS -->
+    <div class="panel" id="panel-pending">
+      <div class="section-header">
+        <div class="section-title">Pending Payment Approvals</div>
+        <div class="section-line"></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-controls">
+          <input type="text" class="table-search" placeholder="Search by name or reference…" oninput="filterPending(this.value)">
+          <select class="table-filter" onchange="filterPendingMethod(this.value)">
+            <option value="">All Methods</option>
+            <option value="gcash">GCash</option>
+            <option value="maya">Maya</option>
+            <option value="bank">Bank Transfer</option>
+            <option value="padala">Cash Padala</option>
+          </select>
+          <button class="btn btn-ghost" onclick="loadPending()">🔄 Refresh</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Subscriber</th>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>AI Check</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="pendingTableBody">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)"><span class="loading-spinner"></span> Loading pending payments…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUBSCRIBERS -->
+    <div class="panel" id="panel-subscribers">
+      <div class="section-header">
+        <div class="section-title">All Subscribers</div>
+        <div class="section-line"></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-controls">
+          <input type="text" class="table-search" placeholder="Search by username or email…" oninput="filterSubscribers(this.value)">
+          <select class="table-filter" onchange="filterSubscriberStatus(this.value)">
+            <option value="">All Status</option>
+            <option value="pro">Pro</option>
+            <option value="free">Free</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Plan</th>
+              <th>Expires</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subscribersTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)"><span class="loading-spinner"></span> Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CASES -->
+    <div class="panel" id="panel-cases">
+      <div class="section-header">
+        <div class="section-title">Supreme Court Cases</div>
+        <div class="section-line"></div>
+        <button class="btn btn-primary" onclick="showAddCase()">+ Add Case</button>
+      </div>
+      <div class="form-card" id="addCaseForm" style="display:none;">
+        <div class="form-title">Add New Case</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Case Title *</label>
+            <input class="form-input" id="c-title" placeholder="e.g. People v. Juan Dela Cruz">
+          </div>
+          <div class="form-group">
+            <label class="form-label">G.R. Number *</label>
+            <input class="form-input" id="c-gr" placeholder="G.R. No. 123456">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Decided *</label>
+            <input class="form-input" id="c-date" type="date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ponente</label>
+            <input class="form-input" id="c-ponente" placeholder="Justice Name, J.">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-select" id="c-category">
+              <option value="">Select…</option>
+              <option>Civil</option><option>Criminal</option><option>Labor</option>
+              <option>Constitutional</option><option>Commercial</option><option>Family</option>
+              <option>Tax</option><option>Administrative</option><option>Remedial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Division</label>
+            <select class="form-select" id="c-division">
+              <option>En Banc</option><option>First Division</option>
+              <option>Second Division</option><option>Third Division</option>
+            </select>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">Doctrine / Ruling *</label>
+            <textarea class="form-textarea" id="c-doctrine" placeholder="Core legal doctrine established in this case…"></textarea>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">Facts (Summary) *</label>
+            <textarea class="form-textarea" id="c-facts" placeholder="Material facts of the case…"></textarea>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">Issue *</label>
+            <textarea class="form-textarea" id="c-issue" rows="2" placeholder="Legal issue resolved by the Court…"></textarea>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">Ruling *</label>
+            <textarea class="form-textarea" id="c-ruling" placeholder="The Court's ruling and ratio…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma-separated)</label>
+            <input class="form-input" id="c-tags" placeholder="contract,sale,perfection">
+          </div>
+          <div class="form-group" style="align-items:flex-end">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+              <input type="checkbox" id="c-landmark"> Mark as Landmark Case
+            </label>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="submitCase()">Save Case</button>
+          <button class="btn btn-ghost" onclick="hideAddCase()">Cancel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-controls">
+          <input type="text" class="table-search" placeholder="Search cases…" oninput="filterAdminCases(this.value)">
+          <select class="table-filter" onchange="filterAdminCaseCat(this.value)">
+            <option value="">All Categories</option>
+            <option>Civil</option><option>Criminal</option><option>Labor</option>
+            <option>Constitutional</option><option>Commercial</option>
+          </select>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Case Title</th><th>G.R. No.</th><th>Date</th><th>Category</th><th>Landmark</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="casesAdminBody">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">No cases loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LAWS -->
+    <div class="panel" id="panel-laws">
+      <div class="section-header">
+        <div class="section-title">Codal Provisions</div>
+        <div class="section-line"></div>
+        <button class="btn btn-primary" onclick="showAddLaw()">+ Add Provision</button>
+      </div>
+      <div class="form-card" id="addLawForm" style="display:none;">
+        <div class="form-title">Add Codal Provision</div>
+        <div class="form-grid three">
+          <div class="form-group">
+            <label class="form-label">Article / Section *</label>
+            <input class="form-input" id="l-article" placeholder="Article 1305">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Source *</label>
+            <input class="form-input" id="l-source" placeholder="Civil Code of the Philippines">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-select" id="l-category">
+              <option value="">Select…</option>
+              <option>Civil</option><option>Criminal</option><option>Labor</option>
+              <option>Constitutional</option><option>Commercial</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid full" style="margin-top:12px;">
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input class="form-input" id="l-title" placeholder="Definition of Contract">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Full Text *</label>
+            <textarea class="form-textarea" id="l-content" placeholder="Complete text of the provision…" style="min-height:100px;"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="submitLaw()">Save Provision</button>
+          <button class="btn btn-ghost" onclick="hideAddLaw()">Cancel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Article</th><th>Title</th><th>Source</th><th>Category</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="lawsAdminBody">
+            <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">No provisions loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DOCTRINES -->
+    <div class="panel" id="panel-doctrines">
+      <div class="section-header">
+        <div class="section-title">Legal Doctrines</div>
+        <div class="section-line"></div>
+        <button class="btn btn-primary" onclick="showAddDoctrine()">+ Add Doctrine</button>
+      </div>
+      <div class="form-card" id="addDoctrineForm" style="display:none;">
+        <div class="form-title">Add Legal Doctrine</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Doctrine Name *</label>
+            <input class="form-input" id="d-name" placeholder="e.g. Agabon Doctrine">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-select" id="d-category">
+              <option value="">Select…</option>
+              <option>Civil</option><option>Criminal</option><option>Labor</option>
+              <option>Constitutional</option><option>Commercial</option><option>Administrative</option>
+            </select>
+          </div>
+          <div class="form-group span2">
+            <label class="form-label">Description *</label>
+            <textarea class="form-textarea" id="d-desc" placeholder="Explain the doctrine…"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Legal Basis</label>
+            <input class="form-input" id="d-basis" placeholder="Article 294, Labor Code">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Related Cases</label>
+            <input class="form-input" id="d-cases" placeholder="G.R. No. 158693">
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn btn-primary" onclick="submitDoctrine()">Save Doctrine</button>
+          <button class="btn btn-ghost" onclick="hideAddDoctrine()">Cancel</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Doctrine Name</th><th>Category</th><th>Legal Basis</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="doctrinesAdminBody">
+            <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">No doctrines loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- DETAIL MODAL -->
+<div class="modal-backdrop" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Payment Detail</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;" id="modalRef"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const AUTH_URL = 'https://lexph-auth.nizeltumulak.workers.dev';
+const WEBHOOK_URL = 'https://lexph-webhook.nizeltumulak.workers.dev';
+const BACKEND_URL = 'https://lex-ph-backend.onrender.com';
+const ADMIN_KEY = localStorage.getItem('lexph_admin_key') || '';
+
+// ── DATA STORES ─────────────────────────────────────────────
+let allPending = [];
+let allSubscribers = [];
+let allCasesAdmin = [];
+let allLawsAdmin = [];
+let allDoctrinesAdmin = [];
+
+// ── INIT ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkAdminAuth();
+  loadDashboard();
+});
+
+function checkAdminAuth() {
+  const user = JSON.parse(localStorage.getItem('lexph_user') || 'null');
+  if (!user || user.role !== 'admin') {
+    // Prompt for admin key
+    const key = prompt('Enter your Admin Key to access the admin panel:');
+    if (!key) { window.location.href = 'index.html'; return; }
+    localStorage.setItem('lexph_admin_key', key);
+    location.reload();
+    return;
+  }
+  document.getElementById('adminUser').textContent = `👤 ${user.username}`;
+}
+
+function adminLogout() {
+  localStorage.removeItem('lexph_admin_key');
+  localStorage.removeItem('lexph_user');
+  localStorage.removeItem('lexph_token');
+  window.location.href = 'index.html';
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = {
+    dashboard: 'Dashboard', pending: 'Pending Approvals',
+    subscribers: 'Subscribers', cases: 'Cases', laws: 'Laws', doctrines: 'Doctrines',
+  }[name] || name;
+
+  // Load data for panel
+  if (name === 'pending') loadPending();
+  else if (name === 'subscribers') loadSubscribers();
+  else if (name === 'cases') loadCasesAdmin();
+  else if (name === 'laws') loadLawsAdmin();
+  else if (name === 'doctrines') loadDoctrinesAdmin();
+}
+
+function refreshData() {
+  loadDashboard();
+  loadPending();
+}
+
+// ── DASHBOARD ───────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const adminKey = localStorage.getItem('lexph_admin_key') || '';
+    const res = await fetch(`${WEBHOOK_URL}/pending`, {
+      headers: { 'Authorization': `Bearer ${adminKey}` },
+    });
+    const data = await res.json();
+    if (data.success) {
+      allPending = data.data || [];
+      document.getElementById('statPending').textContent = allPending.length;
+      if (allPending.length > 0) {
+        const badge = document.getElementById('pendingBadge');
+        badge.textContent = allPending.length;
+        badge.style.display = 'inline';
+      }
+      renderRecentPending(allPending.slice(0, 5));
+    }
+  } catch (e) {
+    document.getElementById('recentPendingWrap').innerHTML =
+      '<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">Could not load data. Check admin key.</div></div>';
+  }
+
+  // Load local stats
+  const localCases = JSON.parse(localStorage.getItem('lexph_cases_admin') || '[]');
+  document.getElementById('statCases').textContent = localCases.length || '—';
+  document.getElementById('statTotal').textContent = '—';
+  document.getElementById('statPro').textContent = '—';
+  document.getElementById('statRevenue').textContent = '—';
+}
+
+function renderRecentPending(items) {
+  const wrap = document.getElementById('recentPendingWrap');
+  if (!items.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No pending payments</div></div>';
+    return;
+  }
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Reference</th><th>Name</th><th>Plan</th><th>Amount</th><th>AI Check</th><th>Actions</th></tr></thead>
+    <tbody>${items.map(s => renderPendingRow(s)).join('')}</tbody>
+  </table>`;
+}
+
+// ── PENDING PAYMENTS ─────────────────────────────────────────
+async function loadPending() {
+  const tbody = document.getElementById('pendingTableBody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)"><span class="loading-spinner"></span> Loading…</td></tr>';
+
+  try {
+    const adminKey = localStorage.getItem('lexph_admin_key') || '';
+    const res = await fetch(`${WEBHOOK_URL}/pending`, {
+      headers: { 'Authorization': `Bearer ${adminKey}` },
+    });
+    const data = await res.json();
+    if (data.success) {
+      allPending = data.data || [];
+      renderPendingTable(allPending);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Error: ${data.error || 'Failed to load'}</td></tr>`;
+    }
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">Network error. Check connection.</td></tr>';
+  }
+}
+
+function renderPendingTable(items) {
+  const tbody = document.getElementById('pendingTableBody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">✅ No pending payments</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(s => renderPendingRow(s, true)).join('');
+}
+
+function renderPendingRow(s, full = false) {
+  const aiData = s.ai_validation ? JSON.parse(s.ai_validation) : null;
+  const aiConfidence = s.ai_confidence || 'unknown';
+  const aiValid = s.ai_valid;
+  let aiBadge = '';
+  if (aiData) {
+    if (aiValid && aiConfidence === 'high') aiBadge = '<span class="ai-badge high-valid">✅ AI Verified</span>';
+    else if (aiConfidence === 'low') aiBadge = '<span class="ai-badge low">⚠️ Low Confidence</span>';
+    else if (!aiValid) aiBadge = '<span class="ai-badge invalid">❌ AI Flagged</span>';
+    else aiBadge = '<span class="ai-badge low">🔍 Review</span>';
+  } else {
+    aiBadge = '<span class="ai-badge low">📋 Manual</span>';
+  }
+
+  const name = `${s.payer_first_name || ''} ${s.payer_last_name || ''}`.trim() || s.payer_email || '—';
+  const date = s.created_at ? new Date(s.created_at).toLocaleDateString('en-PH') : '—';
+
+  if (!full) {
+    return `<tr>
+      <td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${s.reference_number || '—'}</span></td>
+      <td>${escHtml(name)}</td>
+      <td>${s.plan || '—'}</td>
+      <td>₱${s.amount_paid || '—'}</td>
+      <td>${aiBadge}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-success" onclick="approvePayment('${s.reference_number}','${s.user_id}','${s.plan}')">✓ Approve</button>
+        <button class="btn btn-danger" onclick="rejectPayment('${s.reference_number}')">✕ Reject</button>
+      </div></td>
+    </tr>`;
+  }
+
+  return `<tr>
+    <td><span style="font-family:var(--mono);font-size:11px;color:var(--gold)">${s.reference_number || '—'}</span></td>
+    <td>${escHtml(name)}</td>
+    <td><span class="status pending">${s.plan || '—'}</span></td>
+    <td>₱${s.amount_paid || '—'}</td>
+    <td>${s.payment_method || '—'}</td>
+    <td>${aiBadge}</td>
+    <td>${date}</td>
+    <td><div class="action-btns">
+      <button class="btn btn-ghost" onclick="viewPaymentDetail('${s.reference_number}')">👁</button>
+      <button class="btn btn-success" onclick="approvePayment('${s.reference_number}','${s.user_id}','${s.plan}')">✓</button>
+      <button class="btn btn-danger" onclick="rejectPayment('${s.reference_number}')">✕</button>
+    </div></td>
+  </tr>`;
+}
+
+function filterPending(q) {
+  const filtered = allPending.filter(s =>
+    (s.reference_number || '').toLowerCase().includes(q.toLowerCase()) ||
+    (s.payer_first_name || '').toLowerCase().includes(q.toLowerCase()) ||
+    (s.payer_email || '').toLowerCase().includes(q.toLowerCase())
+  );
+  renderPendingTable(filtered);
+}
+
+function filterPendingMethod(method) {
+  const filtered = method ? allPending.filter(s => s.payment_method === method) : allPending;
+  renderPendingTable(filtered);
+}
+
+async function approvePayment(refNumber, userId, plan) {
+  if (!confirm(`Approve payment ${refNumber}?\nThis will activate Pro access for the user.`)) return;
+
+  const adminKey = localStorage.getItem('lexph_admin_key') || '';
+  try {
+    const res = await fetch(`${WEBHOOK_URL}/manual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminKey}`,
+      },
+      body: JSON.stringify({ reference_number: refNumber, action: 'approve' }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('✅ Payment approved! User Pro access activated.', 'success');
+      loadPending();
+      loadDashboard();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed to approve'), 'error');
+    }
+  } catch (e) {
+    showToast('Network error. Try again.', 'error');
+  }
+}
+
+async function rejectPayment(refNumber) {
+  const reason = prompt('Reason for rejection (optional):');
+  if (reason === null) return; // cancelled
+
+  const adminKey = localStorage.getItem('lexph_admin_key') || '';
+  try {
+    const res = await fetch(`${WEBHOOK_URL}/manual`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminKey}`,
+      },
+      body: JSON.stringify({
+        reference_number: refNumber,
+        action: 'reject',
+        admin_note: reason || 'Rejected by admin',
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('Payment rejected.', 'info');
+      loadPending();
+    } else {
+      showToast('Error: ' + (data.error || 'Failed'), 'error');
+    }
+  } catch (e) {
+    showToast('Network error.', 'error');
+  }
+}
+
+function viewPaymentDetail(refNumber) {
+  const sub = allPending.find(s => s.reference_number === refNumber);
+  if (!sub) return;
+
+  const aiData = sub.ai_validation ? JSON.parse(sub.ai_validation) : null;
+  document.getElementById('modalTitle').textContent = 'Payment Details';
+  document.getElementById('modalRef').textContent = refNumber;
+
+  const fields = [
+    ['Subscriber', `${sub.payer_first_name} ${sub.payer_last_name}`],
+    ['Email', sub.payer_email],
+    ['Mobile', sub.payer_mobile],
+    ['Plan', sub.plan],
+    ['Amount Paid', `₱${sub.amount_paid}`],
+    ['Expected Amount', `₱${sub.expected_amount}`],
+    ['Payment Method', sub.payment_method],
+    ['Transaction Ref', sub.transaction_ref || '—'],
+    ['Date', sub.transaction_date || '—'],
+    ['Sender Account', sub.account_number || '—'],
+    ['Address', sub.payer_address || '—'],
+    ['Profession', sub.profession || '—'],
+    ['Submitted', sub.created_at ? new Date(sub.created_at).toLocaleString('en-PH') : '—'],
+    ['AI Confidence', sub.ai_confidence || 'N/A'],
+    ['AI Summary', aiData?.summary || 'Not available'],
+  ];
+
+  document.getElementById('modalBody').innerHTML = fields.map(([label, value]) =>
+    `<div class="detail-row"><div class="detail-label">${label}</div><div class="detail-value">${escHtml(String(value || '—'))}</div></div>`
+  ).join('');
+
+  document.getElementById('modalActions').innerHTML = `
+    <button class="btn btn-success" onclick="approvePayment('${refNumber}','${sub.user_id}','${sub.plan}');closeModal()">✓ Approve</button>
+    <button class="btn btn-danger" onclick="rejectPayment('${refNumber}');closeModal()">✕ Reject</button>
+    <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+  `;
+
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+// ── SUBSCRIBERS ──────────────────────────────────────────────
+function loadSubscribers() {
+  // Load from localStorage as fallback (real backend would query MongoDB)
+  const tbody = document.getElementById('subscribersTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">Connect to backend to view all subscribers.</td></tr>';
+}
+
+function filterSubscribers(q) {}
+function filterSubscriberStatus(s) {}
+
+// ── CASES ADMIN ──────────────────────────────────────────────
+function loadCasesAdmin() {
+  allCasesAdmin = JSON.parse(localStorage.getItem('lexph_cases_admin') || '[]');
+  renderCasesAdmin(allCasesAdmin);
+}
+
+function renderCasesAdmin(cases) {
+  const tbody = document.getElementById('casesAdminBody');
+  if (!cases.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">No cases added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = cases.map((c, i) => `<tr>
+    <td><strong style="color:var(--text)">${escHtml(c.case_title)}</strong></td>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(c.gr_number)}</td>
+    <td>${c.date_decided || '—'}</td>
+    <td><span class="status active">${c.category}</span></td>
+    <td>${c.is_landmark ? '⭐' : '—'}</td>
+    <td><button class="btn btn-danger" onclick="deleteCase(${i})">Delete</button></td>
+  </tr>`).join('');
+}
+
+function showAddCase() { document.getElementById('addCaseForm').style.display = 'block'; }
+function hideAddCase() { document.getElementById('addCaseForm').style.display = 'none'; }
+
+function submitCase() {
+  const fields = {
+    case_title: document.getElementById('c-title').value.trim(),
+    gr_number: document.getElementById('c-gr').value.trim(),
+    date_decided: document.getElementById('c-date').value,
+    ponente: document.getElementById('c-ponente').value.trim(),
+    category: document.getElementById('c-category').value,
+    division: document.getElementById('c-division').value,
+    doctrine: document.getElementById('c-doctrine').value.trim(),
+    facts: document.getElementById('c-facts').value.trim(),
+    issue: document.getElementById('c-issue').value.trim(),
+    ruling: document.getElementById('c-ruling').value.trim(),
+    tags: document.getElementById('c-tags').value.trim(),
+    is_landmark: document.getElementById('c-landmark').checked ? 1 : 0,
+    created_at: new Date().toISOString(),
+  };
+
+  const required = ['case_title', 'gr_number', 'date_decided', 'category', 'doctrine', 'facts', 'issue', 'ruling'];
+  for (const f of required) {
+    if (!fields[f]) { showToast(`Please fill in: ${f.replace(/_/g,' ')}`, 'error'); return; }
+  }
+
+  allCasesAdmin.unshift(fields);
+  localStorage.setItem('lexph_cases_admin', JSON.stringify(allCasesAdmin));
+  renderCasesAdmin(allCasesAdmin);
+  hideAddCase();
+  showToast('✅ Case saved!', 'success');
+
+  // Clear form
+  ['c-title','c-gr','c-date','c-ponente','c-doctrine','c-facts','c-issue','c-ruling','c-tags'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+function deleteCase(index) {
+  if (!confirm('Delete this case?')) return;
+  allCasesAdmin.splice(index, 1);
+  localStorage.setItem('lexph_cases_admin', JSON.stringify(allCasesAdmin));
+  renderCasesAdmin(allCasesAdmin);
+  showToast('Case deleted.', 'info');
+}
+
+function filterAdminCases(q) {
+  const filtered = allCasesAdmin.filter(c =>
+    c.case_title.toLowerCase().includes(q.toLowerCase()) ||
+    c.gr_number.toLowerCase().includes(q.toLowerCase())
+  );
+  renderCasesAdmin(filtered);
+}
+
+function filterAdminCaseCat(cat) {
+  const filtered = cat ? allCasesAdmin.filter(c => c.category === cat) : allCasesAdmin;
+  renderCasesAdmin(filtered);
+}
+
+// ── LAWS ADMIN ───────────────────────────────────────────────
+function loadLawsAdmin() {
+  allLawsAdmin = JSON.parse(localStorage.getItem('lexph_laws_admin') || '[]');
+  renderLawsAdmin(allLawsAdmin);
+}
+
+function renderLawsAdmin(laws) {
+  const tbody = document.getElementById('lawsAdminBody');
+  if (!laws.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">No provisions added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = laws.map((l, i) => `<tr>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--gold)">${escHtml(l.article_number)}</td>
+    <td><strong style="color:var(--text)">${escHtml(l.title)}</strong></td>
+    <td style="font-size:11px;color:var(--text3)">${escHtml(l.source)}</td>
+    <td><span class="status active">${l.category}</span></td>
+    <td><button class="btn btn-danger" onclick="deleteLaw(${i})">Delete</button></td>
+  </tr>`).join('');
+}
+
+function showAddLaw() { document.getElementById('addLawForm').style.display = 'block'; }
+function hideAddLaw() { document.getElementById('addLawForm').style.display = 'none'; }
+
+function submitLaw() {
+  const law = {
+    article_number: document.getElementById('l-article').value.trim(),
+    source: document.getElementById('l-source').value.trim(),
+    category: document.getElementById('l-category').value,
+    title: document.getElementById('l-title').value.trim(),
+    content: document.getElementById('l-content').value.trim(),
+    created_at: new Date().toISOString(),
+  };
+  if (!law.article_number || !law.source || !law.category || !law.title || !law.content) {
+    showToast('Please fill in all required fields.', 'error'); return;
+  }
+  allLawsAdmin.unshift(law);
+  localStorage.setItem('lexph_laws_admin', JSON.stringify(allLawsAdmin));
+  renderLawsAdmin(allLawsAdmin);
+  hideAddLaw();
+  showToast('✅ Provision saved!', 'success');
+}
+
+function deleteLaw(index) {
+  if (!confirm('Delete this provision?')) return;
+  allLawsAdmin.splice(index, 1);
+  localStorage.setItem('lexph_laws_admin', JSON.stringify(allLawsAdmin));
+  renderLawsAdmin(allLawsAdmin);
+}
+
+// ── DOCTRINES ADMIN ──────────────────────────────────────────
+function loadDoctrinesAdmin() {
+  allDoctrinesAdmin = JSON.parse(localStorage.getItem('lexph_doctrines_admin') || '[]');
+  renderDoctrinesAdmin(allDoctrinesAdmin);
+}
+
+function renderDoctrinesAdmin(docs) {
+  const tbody = document.getElementById('doctrinesAdminBody');
+  if (!docs.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">No doctrines added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = docs.map((d, i) => `<tr>
+    <td><strong style="color:var(--text)">${escHtml(d.doctrine_name)}</strong></td>
+    <td><span class="status active">${d.category}</span></td>
+    <td style="font-size:11px;color:var(--text3)">${escHtml(d.legal_basis || '—')}</td>
+    <td><button class="btn btn-danger" onclick="deleteDoctrine(${i})">Delete</button></td>
+  </tr>`).join('');
+}
+
+function showAddDoctrine() { document.getElementById('addDoctrineForm').style.display = 'block'; }
+function hideAddDoctrine() { document.getElementById('addDoctrineForm').style.display = 'none'; }
+
+function submitDoctrine() {
+  const doc = {
+    doctrine_name: document.getElementById('d-name').value.trim(),
+    category: document.getElementById('d-category').value,
+    description: document.getElementById('d-desc').value.trim(),
+    legal_basis: document.getElementById('d-basis').value.trim(),
+    related_cases: document.getElementById('d-cases').value.trim(),
+    created_at: new Date().toISOString(),
+  };
+  if (!doc.doctrine_name || !doc.category || !doc.description) {
+    showToast('Please fill in required fields.', 'error'); return;
+  }
+  allDoctrinesAdmin.unshift(doc);
+  localStorage.setItem('lexph_doctrines_admin', JSON.stringify(allDoctrinesAdmin));
+  renderDoctrinesAdmin(allDoctrinesAdmin);
+  hideAddDoctrine();
+  showToast('✅ Doctrine saved!', 'success');
+}
+
+function deleteDoctrine(index) {
+  if (!confirm('Delete this doctrine?')) return;
+  allDoctrinesAdmin.splice(index, 1);
+  localStorage.setItem('lexph_doctrines_admin', JSON.stringify(allDoctrinesAdmin));
+  renderDoctrinesAdmin(allDoctrinesAdmin);
+}
+
+// ── TOAST ────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── HELPERS ──────────────────────────────────────────────────
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
