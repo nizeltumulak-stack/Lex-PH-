@@ -765,31 +765,179 @@ function clearError() { document.getElementById('formError').classList.remove('s
 
 function getVal(id) { return document.getElementById(id)?.value.trim() || ''; }
 
-function submitSubscription() {
-  clearError();
+// ── CONFIG ───────────────────────────────────────────────────
+const AUTH_URL = 'https://lexph-auth.nizeltumulak.workers.dev';
+const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
+const EXPECTED_AMOUNTS = { monthly: 199, annual: 1590, otbt: 699 };
 
-  // Validate personal info
+// ── HELPERS ──────────────────────────────────────────────────
+function setSubmitState(loading) {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = loading;
+  btn.textContent = loading ? '🔍 Validating payment…' : '✓ Submit Subscription';
+}
+
+function showValidationStatus(msg, type = 'info') {
+  let el = document.getElementById('validationStatus');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'validationStatus';
+    el.style.cssText = 'margin:12px 0;padding:14px 16px;border-radius:8px;font-size:13px;font-weight:500;';
+    document.getElementById('formError').after(el);
+  }
+  const colors = {
+    info: 'background:#e8f4fc;color:#1a5276;border:1px solid #aed6f1',
+    success: 'background:#e8f8f5;color:#1a5e45;border:1px solid #a9dfbf',
+    error: 'background:#fce8e5;color:#b83224;border:1px solid #f5b7b1',
+    warning: 'background:#fef9e7;color:#7d6608;border:1px solid #f9e79f',
+  };
+  el.style.cssText += colors[type] || colors.info;
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+
+function hideValidationStatus() {
+  const el = document.getElementById('validationStatus');
+  if (el) el.style.display = 'none';
+}
+
+// ── CONVERT IMAGE TO BASE64 ───────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── AI PAYMENT VALIDATION ────────────────────────────────────
+async function validatePaymentWithAI(paymentData, screenshotFile) {
+  try {
+    showValidationStatus('🤖 AI is analyzing your payment screenshot…', 'info');
+
+    let base64Image = null;
+    let mediaType = 'image/jpeg';
+
+    if (screenshotFile) {
+      base64Image = await fileToBase64(screenshotFile);
+      mediaType = screenshotFile.type || 'image/jpeg';
+    }
+
+    const expectedAmount = EXPECTED_AMOUNTS[selectedPlan] || 199;
+
+    const systemPrompt = `You are a Philippine payment verification assistant for LexPH.
+Analyze the payment screenshot and form data to verify if the payment is legitimate.
+You must respond ONLY with a valid JSON object, no markdown, no explanation.
+
+JSON structure:
+{
+  "valid": true or false,
+  "confidence": "high|medium|low",
+  "amount_match": true or false,
+  "reference_found": true or false,
+  "issues": ["list of any problems found"],
+  "summary": "one sentence summary of your finding"
+}
+
+Rules:
+- Check if the amount in the screenshot matches the expected amount
+- Check if the reference number appears in the screenshot
+- Check if the sender name/number matches what was entered
+- Check if it looks like a real GCash/Maya/bank/padala receipt
+- If screenshot is unclear or cannot be read, set confidence to "low" but still validate based on form data`;
+
+    const userContent = [
+      {
+        type: 'text',
+        text: `Verify this payment:
+Payment method: ${paymentData.method}
+Expected amount: ₱${expectedAmount}
+Stated amount: ₱${paymentData.amount}
+Reference number: ${paymentData.reference}
+Sender name: ${paymentData.sender_name || 'N/A'}
+Sender number/account: ${paymentData.sender_account || 'N/A'}
+Transaction date: ${paymentData.date || 'N/A'}
+Plan: ${selectedPlan}
+
+Please verify this payment against the screenshot provided.`
+      }
+    ];
+
+    if (base64Image) {
+      userContent.push({
+        type: 'image',
+        source: { type: 'base64', media_type: mediaType, data: base64Image }
+      });
+    }
+
+    const res = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemini-2.0-flash',
+        max_tokens: 500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: JSON.stringify(userContent) }],
+      }),
+    });
+
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    return result;
+
+  } catch (e) {
+    console.warn('AI validation failed, falling back to manual review:', e);
+    // If AI fails, allow submission but flag for manual review
+    return {
+      valid: true,
+      confidence: 'low',
+      amount_match: true,
+      reference_found: false,
+      issues: ['AI validation unavailable — flagged for manual review'],
+      summary: 'Submitted for manual admin review',
+    };
+  }
+}
+
+// ── MAIN SUBMIT FUNCTION ─────────────────────────────────────
+async function submitSubscription() {
+  clearError();
+  hideValidationStatus();
+
+  // ── Validate personal info ────────────────────────────────
   if (!getVal('firstName')) return showError('Please enter your first name.');
   if (!getVal('lastName')) return showError('Please enter your last name.');
   if (!getVal('emailAddr')) return showError('Please enter your email address.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(getVal('emailAddr'))) return showError('Please enter a valid email address.');
   if (!getVal('mobileNum')) return showError('Please enter your mobile number.');
-  if (!/^(09|\+639)\d{9}$/.test(getVal('mobileNum').replace(/\s/g,''))) return showError('Please enter a valid PH mobile number (e.g. 09XX XXX XXXX).');
+  if (!/^(09|\+639)\d{9}$/.test(getVal('mobileNum').replace(/\s/g,''))) return showError('Please enter a valid PH mobile number.');
   if (!getVal('address')) return showError('Please enter your complete address.');
 
-  // Validate payment fields
+  // ── Validate payment fields & get proof file ──────────────
+  let proofFile = null;
+  let paymentData = {};
+
   if (selectedPayment === 'gcash') {
     if (!getVal('gcashRef')) return showError('Please enter your GCash reference number.');
     if (!getVal('gcashNum')) return showError('Please enter the GCash number used.');
     if (!getVal('gcashDate')) return showError('Please enter the date and time of payment.');
     if (!getVal('gcashAmt')) return showError('Please enter the amount sent.');
     if (!document.getElementById('gcashProof').files.length) return showError('Please upload your GCash screenshot.');
+    proofFile = document.getElementById('gcashProof').files[0];
+    paymentData = { method: 'GCash', reference: getVal('gcashRef'), amount: getVal('gcashAmt'), sender_account: getVal('gcashNum'), date: getVal('gcashDate') };
+
   } else if (selectedPayment === 'maya') {
     if (!getVal('mayaRef')) return showError('Please enter your PayMaya reference number.');
     if (!getVal('mayaNum')) return showError('Please enter the PayMaya account used.');
     if (!getVal('mayaDate')) return showError('Please enter the date and time of payment.');
     if (!getVal('mayaAmt')) return showError('Please enter the amount sent.');
     if (!document.getElementById('mayaProof').files.length) return showError('Please upload your PayMaya screenshot.');
+    proofFile = document.getElementById('mayaProof').files[0];
+    paymentData = { method: 'Maya', reference: getVal('mayaRef'), amount: getVal('mayaAmt'), sender_account: getVal('mayaNum'), date: getVal('mayaDate') };
+
   } else if (selectedPayment === 'bank') {
     if (!getVal('bankName')) return showError('Please select your bank.');
     if (!getVal('bankSender')) return showError('Please enter the sender account name.');
@@ -797,6 +945,9 @@ function submitSubscription() {
     if (!getVal('bankDate')) return showError('Please enter the date of transfer.');
     if (!getVal('bankAmt')) return showError('Please enter the amount transferred.');
     if (!document.getElementById('bankProof').files.length) return showError('Please upload your deposit slip or screenshot.');
+    proofFile = document.getElementById('bankProof').files[0];
+    paymentData = { method: 'Bank Transfer', reference: getVal('bankRef'), amount: getVal('bankAmt'), sender_name: getVal('bankSender'), sender_account: getVal('bankName'), date: getVal('bankDate') };
+
   } else if (selectedPayment === 'padala') {
     if (!getVal('padalaCenter')) return showError('Please select the remittance center.');
     if (!getVal('padalaSender')) return showError('Please enter the sender full name.');
@@ -805,25 +956,99 @@ function submitSubscription() {
     if (!getVal('padalaAmt')) return showError('Please enter the amount sent.');
     if (!getVal('padalaBranch')) return showError('Please enter the branch/location.');
     if (!document.getElementById('padalaProof').files.length) return showError('Please upload your receipt photo.');
+    proofFile = document.getElementById('padalaProof').files[0];
+    paymentData = { method: 'Cash Padala', reference: getVal('padalaRef'), amount: getVal('padalaAmt'), sender_name: getVal('padalaSender'), sender_account: getVal('padalaCenter'), date: getVal('padalaDate') };
   }
 
   if (!document.getElementById('agreeTerms').checked) return showError('Please agree to the Terms of Service and Privacy Policy.');
 
-  // Generate reference number
+  // ── AI Payment Validation ─────────────────────────────────
+  setSubmitState(true);
+
+  const validation = await validatePaymentWithAI(paymentData, proofFile);
+  const expectedAmount = EXPECTED_AMOUNTS[selectedPlan] || 199;
+  const statedAmount = parseFloat(paymentData.amount?.replace(/[^0-9.]/g, '') || 0);
+
+  // Hard reject if amount is clearly wrong
+  if (statedAmount > 0 && Math.abs(statedAmount - expectedAmount) > 10) {
+    setSubmitState(false);
+    return showValidationStatus(
+      `❌ Amount mismatch detected. Expected ₱${expectedAmount} for the ${selectedPlan} plan, but ₱${statedAmount} was entered. Please check and resubmit.`,
+      'error'
+    );
+  }
+
+  // If AI says invalid with high confidence, reject
+  if (validation.valid === false && validation.confidence === 'high') {
+    setSubmitState(false);
+    const issues = validation.issues?.join(', ') || 'Payment could not be verified';
+    return showValidationStatus(`❌ Payment validation failed: ${issues}. ${validation.summary}`, 'error');
+  }
+
+  // Show validation result to user
+  if (validation.confidence === 'low' || validation.issues?.length > 0) {
+    showValidationStatus(
+      `⚠️ ${validation.summary} — Your submission will be reviewed manually within 1-24 hours.`,
+      'warning'
+    );
+  } else {
+    showValidationStatus(`✅ Payment verified! ${validation.summary}`, 'success');
+  }
+
+  // ── Generate reference & submit to backend ────────────────
   const ref = 'LXPH-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
 
-  // Save to localStorage
-  const subData = {
-    ref, plan: selectedPlan, payment: selectedPayment,
-    name: getVal('firstName') + ' ' + getVal('lastName'),
-    email: getVal('emailAddr'), mobile: getVal('mobileNum'),
-    address: getVal('address'), profession: getVal('profession'),
-    organization: getVal('organization'), notes: getVal('notes'),
-    submittedAt: new Date().toISOString(), status: 'pending'
+  const token = localStorage.getItem('lexph_token');
+  const subPayload = {
+    plan: selectedPlan,
+    payment_method: selectedPayment,
+    reference_number: ref,
+    amount_paid: statedAmount || expectedAmount,
+    payer_first_name: getVal('firstName'),
+    payer_last_name: getVal('lastName'),
+    payer_email: getVal('emailAddr'),
+    payer_mobile: getVal('mobileNum'),
+    payer_address: getVal('address'),
+    profession: getVal('profession'),
+    organization: getVal('organization'),
+    notes: getVal('notes'),
+    // Payment details
+    transaction_ref: paymentData.reference,
+    account_number: paymentData.sender_account,
+    transaction_date: paymentData.date,
+    sender_name: paymentData.sender_name,
+    // AI validation result
+    ai_validation: JSON.stringify(validation),
+    ai_confidence: validation.confidence,
+    ai_valid: validation.valid,
   };
-  localStorage.setItem('lexph_subscription', JSON.stringify(subData));
 
-  // Update user role to 'pending_pro'
+  try {
+    if (token) {
+      // Submit to backend
+      const res = await fetch(`${AUTH_URL}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(subPayload),
+      });
+      const result = await res.json();
+      if (!result.success && result.error) {
+        setSubmitState(false);
+        return showError(result.error);
+      }
+    }
+  } catch (e) {
+    console.warn('Backend submission failed, saving locally:', e);
+  }
+
+  // ── Save to localStorage as backup ────────────────────────
+  localStorage.setItem('lexph_subscription', JSON.stringify({
+    ...subPayload, status: 'pending', submittedAt: new Date().toISOString(),
+  }));
+
   const stored = localStorage.getItem('lexph_user');
   if (stored) {
     try {
@@ -834,8 +1059,8 @@ function submitSubscription() {
     } catch(e) {}
   }
 
-  // Disable button, show success
-  document.getElementById('submitBtn').disabled = true;
+  // ── Show success ──────────────────────────────────────────
+  setSubmitState(false);
   document.getElementById('refNumber').textContent = ref;
   document.getElementById('successOverlay').classList.add('show');
 }
