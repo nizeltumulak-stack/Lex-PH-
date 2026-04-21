@@ -1,16 +1,19 @@
 /**
  * LexPH — Cloudflare Worker: Payment Webhook Handler
  * ─────────────────────────────────────────────────────────────
- * ENVIRONMENT VARIABLES (set in Cloudflare Worker Settings → Variables):
+ * ENVIRONMENT VARIABLES:
  *   MONGODB_URI           → your MongoDB Atlas connection string
  *   GCASH_WEBHOOK_SECRET  → from GCash Business dashboard
  *   MAYA_WEBHOOK_SECRET   → from Maya Business dashboard
- *   ADMIN_WEBHOOK_KEY     → a strong secret you generate (for manual verification)
+ *   ADMIN_WEBHOOK_KEY     → strong secret for manual verification
+ *   AUTH_WORKER_URL       → https://lexph-auth.nizeltumulak.workers.dev
+ *   ADMIN_KEY             → same value as ADMIN_KEY in lexph-auth worker
  *
- * WEBHOOK URLS TO REGISTER:
- *   GCash  → https://lexph-webhook.nizeltumulak.workers.dev/gcash
- *   Maya   → https://lexph-webhook.nizeltumulak.workers.dev/maya
- *   Manual → https://lexph-webhook.nizeltumulak.workers.dev/manual
+ * ENDPOINTS:
+ *   POST /gcash    → GCash payment webhook
+ *   POST /maya     → Maya payment webhook
+ *   POST /manual   → Admin manual approval
+ *   GET  /pending  → List pending subscriptions (admin)
  * ─────────────────────────────────────────────────────────────
  */
 
@@ -27,14 +30,16 @@ export default {
     }
 
     const url = new URL(request.url);
-    const provider = url.pathname.split('/').pop(); // 'gcash' | 'maya' | 'manual' | 'pending'
+    const provider = url.pathname.split('/').pop();
     const MONGO = env.MONGODB_URI;
+    const AUTH_URL = env.AUTH_WORKER_URL || 'https://lexph-auth.nizeltumulak.workers.dev';
+    const ADMIN_KEY = env.ADMIN_KEY || '';
 
     const rawBody = await request.text();
     let payload = {};
     try { payload = JSON.parse(rawBody); } catch {}
 
-    // ── LOG all incoming webhook events ───────────────────────
+    // Log all webhook events
     try {
       await mongoInsert(MONGO, 'webhook_events', {
         _id: crypto.randomUUID(),
@@ -45,134 +50,162 @@ export default {
         processed: false,
         created_at: new Date().toISOString(),
       });
-    } catch (e) {
-      console.error('Failed to log webhook event:', e);
-    }
+    } catch (e) { console.error('Failed to log webhook:', e); }
 
-    // ── GCASH WEBHOOK ──────────────────────────────────────────
+    // ── GCASH ──────────────────────────────────────────────
     if (provider === 'gcash') {
       const secret = env.GCASH_WEBHOOK_SECRET || '';
       const signature = request.headers.get('x-gcash-signature') || '';
-
-      if (secret && !await verifyHmacSignature(rawBody, secret, signature)) {
+      if (secret && !await verifyHmacSignature(rawBody, secret, signature))
         return json({ error: 'Invalid GCash signature' }, 401);
-      }
 
       const { event, data } = payload;
-
       if (event === 'payment.success' || data?.status === 'SUCCESS') {
         const ref = data?.referenceNumber || data?.externalId;
         if (ref) {
-          await activateByReference(MONGO, ref, 'gcash');
-          return json({ received: true });
+          const result = await activateByReference(MONGO, ref, 'gcash', AUTH_URL, ADMIN_KEY);
+          return json({ received: true, activated: result.success });
         }
       }
-
       return json({ received: true, note: 'Event not actionable' });
     }
 
-    // ── MAYA WEBHOOK ───────────────────────────────────────────
+    // ── MAYA ───────────────────────────────────────────────
     if (provider === 'maya') {
       const secret = env.MAYA_WEBHOOK_SECRET || '';
       const signature = request.headers.get('x-maya-signature') || '';
-
-      if (secret && !await verifyHmacSignature(rawBody, secret, signature)) {
+      if (secret && !await verifyHmacSignature(rawBody, secret, signature))
         return json({ error: 'Invalid Maya signature' }, 401);
-      }
 
       const { status, metadata, id } = payload;
-
       if (status === 'PAYMENT_SUCCESS' || status === 'COMPLETED') {
         const ref = metadata?.externalReferenceId || id;
         if (ref) {
-          await activateByReference(MONGO, ref, 'maya');
-          return json({ received: true });
+          const result = await activateByReference(MONGO, ref, 'maya', AUTH_URL, ADMIN_KEY);
+          return json({ received: true, activated: result.success });
         }
       }
-
       return json({ received: true, note: 'Event not actionable' });
     }
 
-    // ── MANUAL ADMIN VERIFICATION ──────────────────────────────
+    // ── MANUAL ADMIN ───────────────────────────────────────
     if (provider === 'manual') {
       const adminKey = env.ADMIN_WEBHOOK_KEY || '';
       const authHeader = request.headers.get('Authorization') || '';
       const providedKey = authHeader.replace('Bearer ', '').trim();
 
-      if (!adminKey || providedKey !== adminKey) {
+      if (!adminKey || providedKey !== adminKey)
         return json({ error: 'Unauthorized' }, 401);
-      }
 
       const { reference_number, action, admin_note } = payload;
-      if (!reference_number || !action) {
+      if (!reference_number || !action)
         return json({ error: 'reference_number and action are required' }, 400);
-      }
 
       if (action === 'approve') {
-        const result = await activateByReference(MONGO, reference_number, 'manual');
+        const result = await activateByReference(MONGO, reference_number, 'manual', AUTH_URL, ADMIN_KEY);
         if (!result.success) return json({ error: result.error }, 404);
 
         await mongoUpdateOne(MONGO, 'webhook_events',
           { reference_number },
-          { processed: true, processed_at: new Date().toISOString() }
+          { processed: true, processed_at: new Date().toISOString(), admin_note: admin_note || '' }
         );
 
         return json({ success: true, message: `Subscription ${reference_number} activated.` });
       }
 
       if (action === 'reject') {
-        const result = await mongoUpdateOne(MONGO, 'subscriptions',
-          { reference_number },
-          { status: 'cancelled' }
-        );
-        if (!result) return json({ error: 'Subscription not found' }, 404);
+        const sub = await mongoFind(MONGO, 'subscriptions', { reference_number });
+        if (!sub) return json({ error: 'Subscription not found' }, 404);
+
+        await mongoUpdateOne(MONGO, 'subscriptions', { reference_number }, {
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          admin_note: admin_note || '',
+        });
+
         return json({ success: true, message: `Subscription ${reference_number} rejected.` });
       }
 
       return json({ error: 'action must be approve or reject' }, 400);
     }
 
-    // ── LIST PENDING (admin convenience) ───────────────────────
+    // ── PENDING LIST (admin) ───────────────────────────────
     if (provider === 'pending' && request.method === 'GET') {
       const adminKey = env.ADMIN_WEBHOOK_KEY || '';
       const authHeader = request.headers.get('Authorization') || '';
-      if (authHeader.replace('Bearer ', '').trim() !== adminKey) {
+      if (authHeader.replace('Bearer ', '').trim() !== adminKey)
         return json({ error: 'Unauthorized' }, 401);
-      }
 
       const pending = await mongoFindMany(MONGO, 'subscriptions', { status: 'pending' });
-      return json({ success: true, count: pending?.length || 0, data: pending });
+      return json({ success: true, count: pending.length, data: pending });
     }
 
     return json({ error: 'Unknown webhook endpoint' }, 404);
   }
 };
 
-// ── MongoDB Atlas Data API Helpers ────────────────────────────
+// ── Activation ────────────────────────────────────────────────
+
+async function activateByReference(uri, reference, provider, authUrl, adminKey) {
+  const sub = await mongoFind(uri, 'subscriptions', { reference_number: reference });
+  if (!sub) return { success: false, error: 'Subscription not found' };
+  if (sub.status === 'active') return { success: true }; // idempotent
+
+  const now = new Date();
+  const expiry = new Date(now);
+  if (sub.plan === 'monthly') expiry.setMonth(expiry.getMonth() + 1);
+  else if (sub.plan === 'annual') expiry.setFullYear(expiry.getFullYear() + 1);
+  else if (sub.plan === 'otbt') expiry.setHours(expiry.getHours() + 72);
+
+  // Update subscription in MongoDB
+  await mongoUpdateOne(uri, 'subscriptions', { reference_number: reference }, {
+    status: 'active',
+    starts_at: now.toISOString(),
+    expires_at: expiry.toISOString(),
+    verified_at: now.toISOString(),
+    verified_by: provider,
+  });
+
+  // Call auth worker /activate to update user role
+  try {
+    await fetch(`${authUrl}/activate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminKey}`,
+      },
+      body: JSON.stringify({
+        user_id: sub.user_id,
+        plan: sub.plan,
+        reference_number: reference,
+      }),
+    });
+  } catch (e) {
+    console.error('Failed to call auth /activate:', e);
+  }
+
+  // Log webhook event as processed
+  await mongoUpdateOne(uri, 'webhook_events',
+    { reference_number: reference, processed: false },
+    { processed: true, processed_at: now.toISOString() }
+  );
+
+  console.log(`✓ Activated ${reference} via ${provider} — expires ${expiry.toISOString()}`);
+  return { success: true };
+}
+
+// ── MongoDB Helpers ───────────────────────────────────────────
 
 function parseMongoURI(uri) {
   const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/?]+)[^/]*\/([^?]*)/);
   if (!match) throw new Error('Invalid MongoDB URI');
-  const [, user, pass, host, db] = match;
-  return {
-    dataSource: host.split('.')[0],
-    database: db || 'lexph',
-  };
-}
-
-async function mongoInsert(uri, collection, document) {
-  const { dataSource, database } = parseMongoURI(uri);
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/insertOne`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
-    body: JSON.stringify({ dataSource, database, collection, document }),
-  });
-  return res.json();
+  const [, , , host, db] = match;
+  return { dataSource: host.split('.')[0], database: db || 'lexph' };
 }
 
 async function mongoFind(uri, collection, filter) {
   const { dataSource, database } = parseMongoURI(uri);
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/findOne`, {
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/findOne', {
     method: 'POST',
     headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
     body: JSON.stringify({ dataSource, database, collection, filter }),
@@ -183,7 +216,7 @@ async function mongoFind(uri, collection, filter) {
 
 async function mongoFindMany(uri, collection, filter) {
   const { dataSource, database } = parseMongoURI(uri);
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/find`, {
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/find', {
     method: 'POST',
     headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
     body: JSON.stringify({ dataSource, database, collection, filter }),
@@ -192,46 +225,25 @@ async function mongoFindMany(uri, collection, filter) {
   return data.documents || [];
 }
 
+async function mongoInsert(uri, collection, document) {
+  const { dataSource, database } = parseMongoURI(uri);
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/insertOne', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
+    body: JSON.stringify({ dataSource, database, collection, document }),
+  });
+  return res.json();
+}
+
 async function mongoUpdateOne(uri, collection, filter, update) {
   const { dataSource, database } = parseMongoURI(uri);
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/updateOne`, {
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/updateOne', {
     method: 'POST',
     headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
     body: JSON.stringify({ dataSource, database, collection, filter, update: { $set: update } }),
   });
   return res.json();
 }
-
-// ── Activation Helper ─────────────────────────────────────────
-
-async function activateByReference(uri, reference, provider) {
-  const sub = await mongoFind(uri, 'subscriptions', { reference_number: reference });
-  if (!sub) return { success: false, error: 'Subscription not found' };
-  if (sub.status === 'active') return { success: true }; // already active, idempotent
-
-  const now = new Date();
-  const expiry = new Date(now);
-  if (sub.plan === 'monthly') expiry.setMonth(expiry.getMonth() + 1);
-  else if (sub.plan === 'annual') expiry.setFullYear(expiry.getFullYear() + 1);
-  else if (sub.plan === 'otbt') expiry.setHours(expiry.getHours() + 72);
-
-  await mongoUpdateOne(uri, 'subscriptions', { reference_number: reference }, {
-    status: 'active',
-    starts_at: now.toISOString(),
-    expires_at: expiry.toISOString(),
-    verified_at: now.toISOString(),
-  });
-
-  await mongoUpdateOne(uri, 'webhook_events',
-    { reference_number: reference, processed: false },
-    { processed: true, processed_at: now.toISOString() }
-  );
-
-  console.log(`✓ Activated ${reference} via ${provider} — expires ${expiry.toISOString()}`);
-  return { success: true };
-}
-
-// ── Signature Verification ────────────────────────────────────
 
 async function verifyHmacSignature(body, secret, signature) {
   try {
@@ -247,7 +259,6 @@ async function verifyHmacSignature(body, secret, signature) {
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    status, headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
 }

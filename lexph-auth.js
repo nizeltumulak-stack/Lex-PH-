@@ -1,22 +1,25 @@
 /**
  * LexPH — Cloudflare Worker: Auth + Subscription API
  * ─────────────────────────────────────────────────────────────
- * ENVIRONMENT VARIABLES (set in Cloudflare Worker Settings → Variables):
- *   MONGODB_URI     → your MongoDB Atlas connection string
- *   JWT_SECRET      → any long random string for signing tokens
+ * ENVIRONMENT VARIABLES:
+ *   MONGODB_URI   → your MongoDB Atlas connection string
+ *   JWT_SECRET    → any long random string
+ *   ADMIN_KEY     → same as ADMIN_WEBHOOK_KEY in lexph-webhook
  *
- * ENDPOINTS (all POST, JSON body):
- *   /register   → { username, email, password }
- *   /login      → { username, password }
- *   /me         → Header: Authorization: Bearer <token>
- *   /subscribe  → Header: Authorization: Bearer <token>, + subscription fields
+ * ENDPOINTS:
+ *   POST /register   → { username, email, password }
+ *   POST /login      → { username, password }
+ *   POST /me         → Header: Authorization: Bearer <token>
+ *   POST /subscribe  → Header: Authorization: Bearer <token>
+ *   POST /activate   → Header: Authorization: Bearer <ADMIN_KEY>
+ *   POST /status     → Header: Authorization: Bearer <token>
  * ─────────────────────────────────────────────────────────────
  */
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
 export default {
@@ -29,6 +32,7 @@ export default {
     const path = url.pathname.split('/').pop();
     const MONGO = env.MONGODB_URI;
     const JWT_SECRET = env.JWT_SECRET || 'lexph-change-this-secret';
+    const ADMIN_KEY = env.ADMIN_KEY || '';
 
     try {
       let body = {};
@@ -37,7 +41,6 @@ export default {
       // ── REGISTER ──────────────────────────────────────────
       if (path === 'register') {
         const { username, email, password } = body;
-
         if (!username || !email || !password)
           return json({ error: 'Username, email, and password are required.' }, 400);
         if (password.length < 6)
@@ -45,35 +48,23 @@ export default {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
           return json({ error: 'Invalid email address.' }, 400);
 
-        // Check for existing user
-        const existing = await mongoFind(MONGO, 'users', {
-          $or: [{ username }, { email }]
-        });
+        const existing = await mongoFind(MONGO, 'users', { $or: [{ username }, { email }] });
         if (existing) {
           return json({
-            error: existing.username === username
-              ? 'Username already taken.'
-              : 'Email already registered.',
+            error: existing.username === username ? 'Username already taken.' : 'Email already registered.',
           }, 409);
         }
 
         const password_hash = await hashPassword(password);
         const userId = crypto.randomUUID();
         const now = new Date().toISOString();
-
         const user = {
-          _id: userId,
-          username,
-          email,
-          password_hash,
-          full_name: username,
-          role: 'user',
-          created_at: now,
+          _id: userId, username, email, password_hash,
+          full_name: username, role: 'user',
+          subscription_status: 'free', created_at: now,
         };
-
         await mongoInsert(MONGO, 'users', user);
-
-        const token = await makeJWT({ id: userId, username, role: 'user' }, JWT_SECRET);
+        const token = await makeJWT({ id: userId, username, role: 'user', isPro: false }, JWT_SECRET);
         return json({ success: true, token, user: safeUser(user) });
       }
 
@@ -83,55 +74,59 @@ export default {
         if (!username || !password)
           return json({ error: 'Username and password are required.' }, 400);
 
-        const user = await mongoFind(MONGO, 'users', {
-          $or: [{ username }, { email: username }]
-        });
-
+        const user = await mongoFind(MONGO, 'users', { $or: [{ username }, { email: username }] });
         if (!user) return json({ error: 'Invalid username or password.' }, 401);
 
         const match = await verifyPassword(password, user.password_hash);
         if (!match) return json({ error: 'Invalid username or password.' }, 401);
 
-        // Fetch active subscription
         const now = new Date().toISOString();
-        const sub = await mongoFind(MONGO, 'subscriptions', {
-          user_id: user._id,
-          status: 'active',
-          expires_at: { $gte: now },
+        const activeSub = await mongoFind(MONGO, 'subscriptions', {
+          user_id: user._id, status: 'active', expires_at: { $gte: now },
         });
+        const pendingSub = !activeSub ? await mongoFind(MONGO, 'subscriptions', {
+          user_id: user._id, status: 'pending',
+        }) : null;
 
-        const token = await makeJWT({ id: user._id, username: user.username, role: user.role }, JWT_SECRET);
+        const isPro = !!activeSub || user.subscription_status === 'pro';
+        const token = await makeJWT({ id: user._id, username: user.username, role: user.role, isPro }, JWT_SECRET);
+
         return json({
-          success: true,
-          token,
-          user: { ...safeUser(user), subscription: sub || null },
+          success: true, token,
+          user: { ...safeUser(user), isPro, subscription: activeSub || pendingSub || null },
         });
       }
 
-      // ── ME ───────────────────────────────────────────────
-      if (path === 'me') {
+      // ── ME / STATUS ───────────────────────────────────────
+      if (path === 'me' || path === 'status') {
         const token = extractToken(request);
         if (!token) return json({ error: 'No token provided.' }, 401);
-
         const payload = await verifyJWT(token, JWT_SECRET);
         if (!payload) return json({ error: 'Invalid or expired token.' }, 401);
 
         const user = await mongoFind(MONGO, 'users', { _id: payload.id });
         if (!user) return json({ error: 'User not found.' }, 404);
 
-        const sub = await mongoFind(MONGO, 'subscriptions', {
-          user_id: user._id,
-          status: { $in: ['active', 'pending'] },
+        const now = new Date().toISOString();
+        const activeSub = await mongoFind(MONGO, 'subscriptions', {
+          user_id: user._id, status: 'active', expires_at: { $gte: now },
         });
+        const pendingSub = !activeSub ? await mongoFind(MONGO, 'subscriptions', {
+          user_id: user._id, status: 'pending',
+        }) : null;
 
-        return json({ success: true, user: { ...safeUser(user), subscription: sub || null } });
+        const isPro = !!activeSub || user.subscription_status === 'pro';
+
+        return json({
+          success: true,
+          user: { ...safeUser(user), isPro, subscription: activeSub || pendingSub || null },
+        });
       }
 
       // ── SUBSCRIBE ────────────────────────────────────────
       if (path === 'subscribe') {
         const token = extractToken(request);
         if (!token) return json({ error: 'Login required to subscribe.' }, 401);
-
         const payload = await verifyJWT(token, JWT_SECRET);
         if (!payload) return json({ error: 'Invalid or expired token.' }, 401);
 
@@ -146,7 +141,6 @@ export default {
         if (!plan || !payment_method || !reference_number)
           return json({ error: 'Plan, payment method, and reference number are required.' }, 400);
 
-        // Check duplicate reference number
         const dupRef = await mongoFind(MONGO, 'subscriptions', { reference_number });
         if (dupRef) return json({ error: 'Reference number already used.' }, 409);
 
@@ -155,44 +149,56 @@ export default {
         const subId = crypto.randomUUID();
         const now = new Date().toISOString();
 
-        const sub = {
-          _id: subId,
-          user_id: payload.id,
-          plan,
-          payment_method,
-          reference_number,
-          amount_paid: amount_paid || expectedAmount,
-          status: 'pending',
-          payer_first_name,
-          payer_last_name,
-          payer_email,
-          payer_mobile,
-          payer_address,
-          profession,
-          organization,
-          notes,
-          created_at: now,
-        };
-
-        await mongoInsert(MONGO, 'subscriptions', sub);
+        await mongoInsert(MONGO, 'subscriptions', {
+          _id: subId, user_id: payload.id, plan, payment_method,
+          reference_number, amount_paid: amount_paid || expectedAmount,
+          expected_amount: expectedAmount, status: 'pending',
+          payer_first_name, payer_last_name, payer_email, payer_mobile,
+          payer_address, profession, organization, notes, created_at: now,
+        });
 
         await mongoInsert(MONGO, 'payment_details', {
-          _id: crypto.randomUUID(),
-          subscription_id: subId,
-          method: payment_method,
-          account_number,
-          transaction_ref,
-          transaction_date: transaction_date || null,
-          amount: amount_paid || expectedAmount,
-          bank_name,
-          sender_name,
-          remittance_center,
-          branch_location,
-          control_number,
-          created_at: now,
+          _id: crypto.randomUUID(), subscription_id: subId, method: payment_method,
+          account_number, transaction_ref, transaction_date: transaction_date || null,
+          amount: amount_paid || expectedAmount, bank_name, sender_name,
+          remittance_center, branch_location, control_number, created_at: now,
         });
 
         return json({ success: true, reference_number, status: 'pending' });
+      }
+
+      // ── ACTIVATE (called by webhook after payment approved) ─
+      if (path === 'activate') {
+        const authHeader = request.headers.get('Authorization') || '';
+        if (!ADMIN_KEY || authHeader.replace('Bearer ', '').trim() !== ADMIN_KEY)
+          return json({ error: 'Unauthorized' }, 401);
+
+        const { user_id, plan, reference_number } = body;
+        if (!user_id || !plan)
+          return json({ error: 'user_id and plan are required.' }, 400);
+
+        const now = new Date();
+        const expiry = new Date(now);
+        if (plan === 'monthly') expiry.setMonth(expiry.getMonth() + 1);
+        else if (plan === 'annual') expiry.setFullYear(expiry.getFullYear() + 1);
+        else if (plan === 'otbt') expiry.setHours(expiry.getHours() + 72);
+
+        if (reference_number) {
+          await mongoUpdateOne(MONGO, 'subscriptions', { reference_number }, {
+            status: 'active',
+            starts_at: now.toISOString(),
+            expires_at: expiry.toISOString(),
+            verified_at: now.toISOString(),
+          });
+        }
+
+        await mongoUpdateOne(MONGO, 'users', { _id: user_id }, {
+          subscription_status: 'pro',
+          subscription_plan: plan,
+          subscription_expires: expiry.toISOString(),
+        });
+
+        return json({ success: true, expires_at: expiry.toISOString() });
       }
 
       return json({ error: 'Not found.' }, 404);
@@ -204,70 +210,58 @@ export default {
   }
 };
 
-// ── MongoDB Data API Helpers ─────────────────────────────────
+// ── MongoDB Helpers ───────────────────────────────────────────
 
-async function mongoRequest(uri, action, collection, body) {
-  // Parse connection string to get cluster info
-  const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/]+)\/([^?]+)/);
+function parseMongoURI(uri) {
+  const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/?]+)[^/]*\/([^?]*)/);
   if (!match) throw new Error('Invalid MongoDB URI');
-
-  const [, username, password, cluster, database] = match;
-  const clusterName = cluster.split('.')[0];
-
-  const endpoint = `https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/${action}`;
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': '', // Will use connection string auth below
-    },
-    body: JSON.stringify({
-      dataSource: clusterName,
-      database,
-      collection,
-      ...body,
-    }),
-  });
-
-  return res.json();
+  const [, , , host, db] = match;
+  return { dataSource: host.split('.')[0], database: db || 'lexph' };
 }
 
 async function mongoFind(uri, collection, filter) {
-  // Use MongoDB Atlas Data API
-  const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/?]+)[^/]*\/([^?]*)/);
-  if (!match) throw new Error('Invalid MongoDB URI');
-  const [, user, pass, host, db] = match;
-  const database = db || 'lexph';
-  const dataSource = host.split('.')[0];
-
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/findOne`, {
+  const { dataSource, database } = parseMongoURI(uri);
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/findOne', {
     method: 'POST',
     headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
     body: JSON.stringify({ dataSource, database, collection, filter }),
   });
-
   const data = await res.json();
   return data.document || null;
 }
 
-async function mongoInsert(uri, collection, document) {
-  const match = uri.match(/mongodb\+srv:\/\/([^:]+):([^@]+)@([^/?]+)[^/]*\/([^?]*)/);
-  if (!match) throw new Error('Invalid MongoDB URI');
-  const [, user, pass, host, db] = match;
-  const database = db || 'lexph';
-  const dataSource = host.split('.')[0];
+async function mongoFindMany(uri, collection, filter) {
+  const { dataSource, database } = parseMongoURI(uri);
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/find', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
+    body: JSON.stringify({ dataSource, database, collection, filter }),
+  });
+  const data = await res.json();
+  return data.documents || [];
+}
 
-  const res = await fetch(`https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/insertOne`, {
+async function mongoInsert(uri, collection, document) {
+  const { dataSource, database } = parseMongoURI(uri);
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/insertOne', {
     method: 'POST',
     headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
     body: JSON.stringify({ dataSource, database, collection, document }),
   });
-
   return res.json();
 }
 
-// ── Auth Helpers ─────────────────────────────────────────────
+async function mongoUpdateOne(uri, collection, filter, update) {
+  const { dataSource, database } = parseMongoURI(uri);
+  const res = await fetch('https://data.mongodb-api.com/app/data-akfpb/endpoint/data/v1/action/updateOne', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/ejson', 'Accept': 'application/ejson' },
+    body: JSON.stringify({ dataSource, database, collection, filter, update: { $set: update } }),
+  });
+  return res.json();
+}
+
+// ── Auth Helpers ──────────────────────────────────────────────
 
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -275,8 +269,7 @@ async function hashPassword(password) {
   const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
   const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-    key, 256
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, key, 256
   );
   const hashHex = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
   return `${saltHex}:${hashHex}`;
@@ -288,8 +281,7 @@ async function verifyPassword(password, stored) {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-    key, 256
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, key, 256
   );
   const newHash = Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
   return newHash === hashHex;
@@ -297,8 +289,7 @@ async function verifyPassword(password, stored) {
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    status, headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
 }
 
@@ -316,9 +307,8 @@ function extractToken(req) {
 async function makeJWT(user, secret) {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const payload = btoa(JSON.stringify({
-    id: user.id,
-    username: user.username,
-    role: user.role,
+    id: user.id, username: user.username, role: user.role,
+    isPro: user.isPro || false,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
   }));

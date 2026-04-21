@@ -1,28 +1,16 @@
 /**
  * LexPH — Backend Client (lexph-client.js)
- * ─────────────────────────────────────────────────────────────
- * Drop this into every HTML page before other scripts:
- *   <script src="lexph-client.js"></script>
- * ─────────────────────────────────────────────────────────────
+ * Drop this into every HTML page: <script src="lexph-client.js"></script>
  */
 
 const LEXPH_CONFIG = {
-  // Cloudflare Worker URL for Anthropic API proxy
   WORKER_PROXY_URL: 'https://lexph-api-proxy.nizeltumulak.workers.dev',
-
-  // Cloudflare Worker Auth API URL
   AUTH_API_URL: 'https://lexph-auth.nizeltumulak.workers.dev',
-
-  // Cloudflare Worker Webhook URL
   WEBHOOK_URL: 'https://lexph-webhook.nizeltumulak.workers.dev',
-
-  // Render Backend URL
   BACKEND_URL: 'https://lex-ph-backend.onrender.com',
-
   USE_BACKEND: true,
 };
 
-// ── Token management ────────────────────────────────────────
 const LexPHAuth = {
   getToken() { return localStorage.getItem('lexph_token'); },
   setToken(t) { localStorage.setItem('lexph_token', t); },
@@ -33,23 +21,56 @@ const LexPHAuth = {
     catch { return null; }
   },
   setUser(u) {
-    const safe = { username: u.username, email: u.email, role: u.role, full_name: u.full_name, subscription: u.subscription || null };
+    const safe = {
+      _id: u._id, username: u.username, email: u.email,
+      role: u.role, full_name: u.full_name,
+      subscription_status: u.subscription_status || 'free',
+      subscription_plan: u.subscription_plan || null,
+      subscription_expires: u.subscription_expires || null,
+      isPro: u.isPro || false,
+      subscription: u.subscription || null,
+    };
     localStorage.setItem('lexph_user', JSON.stringify(safe));
   },
   clearUser() {
     localStorage.removeItem('lexph_user');
     localStorage.removeItem('lexph_token');
   },
-  isLoggedIn() { return !!this.getUser(); },
+  isLoggedIn() { return !!this.getToken() && !!this.getUser(); },
+
+  async checkProStatus() {
+    const token = this.getToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(`${LEXPH_CONFIG.AUTH_API_URL}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        this.setUser(data.user);
+        return data.user.isPro === true;
+      }
+    } catch (e) { console.warn('Could not verify pro status:', e); }
+    const user = this.getUser();
+    return user?.isPro === true || user?.subscription_status === 'pro';
+  },
+
   isPro() {
-    const u = this.getUser();
-    if (!u) return false;
-    if (u.subscription?.status === 'active') return true;
+    const user = this.getUser();
+    if (!user) return false;
+    if (user.isPro === true) return true;
+    if (user.subscription_status === 'pro') return true;
+    if (user.subscription?.status === 'active') return true;
     return false;
+  },
+
+  isAdmin() {
+    const user = this.getUser();
+    return user?.role === 'admin';
   },
 };
 
-// ── API helpers ─────────────────────────────────────────────
 async function lexphPost(endpoint, body, auth = false) {
   const headers = { 'Content-Type': 'application/json' };
   if (auth) {
@@ -57,35 +78,27 @@ async function lexphPost(endpoint, body, auth = false) {
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
   const res = await fetch(`${LEXPH_CONFIG.AUTH_API_URL}/${endpoint}`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
+    method: 'POST', headers, body: JSON.stringify(body),
   });
   return res.json();
 }
 
-// ── REGISTER ────────────────────────────────────────────────
 async function lexphRegister(username, email, password) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
     const accounts = JSON.parse(localStorage.getItem('lexph_accounts') || '[]');
     if (accounts.find(a => a.username === username)) return { error: 'Username already taken.' };
     if (accounts.find(a => a.email === email)) return { error: 'Email already registered.' };
-    const user = { username, email, password, role: 'user', full_name: username };
+    const user = { username, email, password, role: 'user', full_name: username, isPro: false };
     accounts.push(user);
     localStorage.setItem('lexph_accounts', JSON.stringify(accounts));
     LexPHAuth.setUser(user);
     return { success: true, user };
   }
-
   const data = await lexphPost('register', { username, email, password });
-  if (data.success) {
-    LexPHAuth.setToken(data.token);
-    LexPHAuth.setUser(data.user);
-  }
+  if (data.success) { LexPHAuth.setToken(data.token); LexPHAuth.setUser(data.user); }
   return data;
 }
 
-// ── LOGIN ────────────────────────────────────────────────────
 async function lexphLogin(username, password) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
     const accounts = JSON.parse(localStorage.getItem('lexph_accounts') || '[]');
@@ -94,8 +107,8 @@ async function lexphLogin(username, password) {
     );
     if (!user) {
       const demo = [
-        { username: 'admin', password: 'admin123', role: 'admin', full_name: 'Admin', email: 'admin@lexph.com' },
-        { username: 'nizel', password: 'password', role: 'user', full_name: 'Nizel Tumulak', email: 'nizel@lexph.com' },
+        { username: 'admin', password: 'admin123', role: 'admin', full_name: 'Admin', email: 'admin@lexph.com', isPro: true },
+        { username: 'nizel', password: 'password', role: 'user', full_name: 'Nizel Tumulak', email: 'nizel@lexph.com', isPro: false },
       ];
       user = demo.find(u => (u.username === username || u.email === username) && u.password === password);
     }
@@ -103,66 +116,52 @@ async function lexphLogin(username, password) {
     LexPHAuth.setUser(user);
     return { success: true, user };
   }
-
   const data = await lexphPost('login', { username, password });
-  if (data.success) {
-    LexPHAuth.setToken(data.token);
-    LexPHAuth.setUser(data.user);
-  }
+  if (data.success) { LexPHAuth.setToken(data.token); LexPHAuth.setUser(data.user); }
   return data;
 }
 
-// ── LOGOUT ───────────────────────────────────────────────────
 function lexphLogout() {
   LexPHAuth.clearUser();
   window.location.href = 'index.html';
 }
 
-// ── SUBMIT SUBSCRIPTION ──────────────────────────────────────
 async function lexphSubscribe(subscriptionData) {
   if (!LEXPH_CONFIG.USE_BACKEND) {
     localStorage.setItem('lexph_subscription', JSON.stringify({
-      ...subscriptionData,
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
+      ...subscriptionData, status: 'pending', submittedAt: new Date().toISOString(),
     }));
     const user = LexPHAuth.getUser();
-    if (user) {
-      user.subscription = { status: 'pending', plan: subscriptionData.plan };
-      LexPHAuth.setUser(user);
-    }
+    if (user) { user.subscription = { status: 'pending', plan: subscriptionData.plan }; LexPHAuth.setUser(user); }
     return { success: true, reference_number: subscriptionData.reference_number };
   }
-
   const data = await lexphPost('subscribe', subscriptionData, true);
   if (data.success) {
     const user = LexPHAuth.getUser();
-    if (user) {
-      user.subscription = { status: 'pending', plan: subscriptionData.plan };
-      LexPHAuth.setUser(user);
-    }
+    if (user) { user.subscription = { status: 'pending', plan: subscriptionData.plan }; LexPHAuth.setUser(user); }
   }
   return data;
 }
 
-// ── ANTHROPIC PROXY ──────────────────────────────────────────
 async function lexphAISearch(messages, system) {
-  const url = LEXPH_CONFIG.WORKER_PROXY_URL;
-
-  const res = await fetch(url, {
+  const res = await fetch(LEXPH_CONFIG.WORKER_PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system,
-      messages,
-    }),
+    body: JSON.stringify({ model: 'gemini-2.0-flash', max_tokens: 4000, system, messages }),
   });
   return res.json();
 }
 
-// Make available globally
+// Auto-check pro status on page load
+window.addEventListener('load', async () => {
+  if (LexPHAuth.isLoggedIn()) {
+    await LexPHAuth.checkProStatus();
+    window.dispatchEvent(new CustomEvent('lexph:statusUpdated', {
+      detail: { isPro: LexPHAuth.isPro() }
+    }));
+  }
+});
+
 window.LexPHAuth = LexPHAuth;
 window.lexphRegister = lexphRegister;
 window.lexphLogin = lexphLogin;
