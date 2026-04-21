@@ -1934,12 +1934,15 @@ Rules:
 - source_url must be a real, specific deep link (not just the homepage)
 - Return 1-3 jurisprudence, 1-3 codal_provisions, 1-2 doctrines`;
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // Use Cloudflare proxy instead of calling Anthropic directly
+  const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
+
+  const response = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1000,
+      model: 'gemini-2.0-flash',
+      max_tokens: 1500,
       system: systemPrompt,
       messages: [{ role: 'user', content: `Philippine legal query: ${query}` }]
     })
