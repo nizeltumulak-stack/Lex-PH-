@@ -1466,7 +1466,8 @@ select.form-control { cursor: pointer; }
       </div>
 
       <div class="categories-section">
-
+        <div class="section-header">
+          <div class="section-title">Browse by Legal Field</div>
           <div class="section-line"></div>
         </div>
         <div class="cat-grid" id="catGrid">
@@ -1934,7 +1935,6 @@ Rules:
 - source_url must be a real, specific deep link (not just the homepage)
 - Return 1-3 jurisprudence, 1-3 codal_provisions, 1-2 doctrines`;
 
-  // Use Cloudflare proxy instead of calling Anthropic directly
   const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
 
   const response = await fetch(PROXY_URL, {
