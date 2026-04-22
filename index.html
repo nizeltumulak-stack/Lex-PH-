@@ -1889,7 +1889,40 @@ async function callAI(system, userMsg, maxTokens = 4000) {
   if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
   const data = await res.json();
   const text = data.content?.find(b => b.type === 'text')?.text || '';
-  return text.replace(/```json[\s\S]*?```/g, m => m.slice(7, -3)).replace(/```/g, '').trim();
+  // Aggressively clean the response to extract JSON
+  return extractJSON(text);
+}
+
+function extractJSON(text) {
+  if (!text) return '{}';
+  // Remove markdown code blocks
+  let clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  // Find the outermost JSON object
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    return clean.slice(start, end + 1);
+  }
+  return clean;
+}
+
+function safeParseJSON(text) {
+  const clean = extractJSON(text);
+  try {
+    return JSON.parse(clean);
+  } catch(e) {
+    // Try to fix common issues
+    try {
+      // Fix unescaped quotes in strings
+      const fixed = clean
+        .replace(/[\u0000-\u001F]/g, ' ') // remove control chars
+        .replace(/,\s*}/g, '}')           // trailing commas
+        .replace(/,\s*]/g, ']');          // trailing commas in arrays
+      return JSON.parse(fixed);
+    } catch(e2) {
+      return null;
+    }
+  }
 }
 
 async function scrapeUrl(url) {
@@ -1907,29 +1940,52 @@ async function scrapeUrl(url) {
 }
 
 async function runDeepSearch(query) {
-  // ── STAGE 1: Query Classification ───────────────────────
-  setSearchStep('step-ai', 'Stage 1 — AI classifying legal query…');
+  // ── STAGE 1: Get cases & statutes ───────────────────────
+  setSearchStep('step-ai', 'Stage 1 — Finding relevant cases and statutes…');
 
-  const s1 = await callAI(
-    `You are a Philippine legal research classifier. Respond ONLY with valid JSON, no markdown.`,
-    `Classify this Philippine legal query and identify what to search for:
-"${query}"
+  const s1system = `You are a Philippine legal research engine. Return ONLY valid JSON starting with { and ending with }. No markdown, no explanation, no code blocks.`;
 
-Respond with:
-{
-  "topic": "precise legal topic",
-  "category": "Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative",
-  "search_terms": ["term1", "term2", "term3"],
-  "target_gr_numbers": ["G.R. No. XXXXX if you know specific relevant cases"],
-  "target_articles": ["Article 2176", "Article 1318", etc],
-  "lawphil_search_url": "https://lawphil.net/judjuris/search.php?q=ENCODED_TERMS",
-  "elibrary_search_url": "https://elibrary.judiciary.gov.ph/search/?q=ENCODED_TERMS"
-}`,
+  const s1prompt = `Philippine legal query: "${query}"
+
+Return this JSON with REAL Philippine cases and statutes:
+{"topic":"short precise topic","category":"Labor","keywords":["kw1","kw2","kw3"],"legal_interpretation":"5 sentences directly answering the query citing specific articles and cases","jurisprudence":[{"case_title":"Full case name v. other party","gr_number":"G.R. No. 123456","date_decided":"January 1 2000","ponente":"Surname J.","division":"Third Division","category":"Labor","doctrine":"exact legal holding","court_interpretation":"how SC interpreted the law","facts":"3 sentence facts","issue":"legal question resolved","ruling":"courts ruling","quoted_portion":"exact verbatim quote","significance":"why this matters","is_landmark":1,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+123456","lawphil_url":"https://lawphil.net/judjuris/search.php?q=123456"}],"codal_provisions":[{"article_number":"Article 279","title":"title","full_text":"complete verbatim text","quoted_portion":"most relevant clause","court_interpretation":"judicial interpretation","source":"Labor Code of the Philippines","source_short":"Labor Code","source_url":"https://lawphil.net/statutes/presdec/pd1974/pd_442_1974.html"}]}`;
+
+  setSearchStep('step-index', 'Stage 2 — Analyzing jurisprudence…');
+  const s1text = await callAI(s1system, s1prompt, 6000);
+  const s1data = safeParseJSON(s1text);
+
+  if (!s1data || !s1data.topic) {
+    throw new Error('Could not retrieve legal data. Please try again.');
+  }
+
+  // ── STAGE 2: Get doctrines & analysis ───────────────────
+  setSearchStep('step-sc', 'Stage 3 — Synthesizing legal doctrines…');
+
+  const s2prompt = `Philippine legal query: "${query}", Topic: ${s1data.topic}
+
+Return ONLY this JSON:
+{"doctrines":[{"doctrine_name":"doctrine name","description":"full explanation","elements":["element 1","element 2"],"court_interpretation":"how SC applied this with key cases","legal_basis":"Article X; CaseName G.R. No. XXXXX","related_cases":"CaseName G.R. No. XXXXX","practical_application":"how lawyer applies this","category":"Labor"}],"analysis":"Paragraph 1: How the statutes apply. Paragraph 2: What the SC has ruled. Paragraph 3: The governing doctrine. Paragraph 4: Practical legal advice.","web_sources":[{"source_id":"elibrary","name":"SC E-Library","relevance":"full text SC decisions","direct_url":"https://elibrary.judiciary.gov.ph/search/?q=illegal+dismissal"},{"source_id":"lawphil","name":"Lawphil","relevance":"case law database","direct_url":"https://lawphil.net/judjuris/search.php?q=illegal+dismissal"}]}`;
+
+  setSearchStep('step-render', 'Stage 4 — Compiling results…');
+  const s2text = await callAI(s1system, s2prompt, 4000);
+  const s2data = safeParseJSON(s2text) || {};
+
+  return {
+    ...s1data,
+    doctrines: s2data.doctrines || [],
+    analysis: s2data.analysis || '',
+    web_sources: s2data.web_sources || [],
+    query,
+    scraped_sources: 0,
+    total: (s1data.jurisprudence?.length || 0) + (s1data.codal_provisions?.length || 0) + (s2data.doctrines?.length || 0),
+  };
+}
+`,
     800
   );
 
   let classification = {};
-  try { classification = JSON.parse(s1); } catch(e) {
+  try { classification = safeParseJSON(s1) || {}; } catch(e) {
     classification = { topic: query, category: 'Civil', search_terms: [query] };
   }
 
@@ -1964,101 +2020,30 @@ Respond with:
     ? `SCRAPED DATA FROM PHILIPPINE LEGAL SOURCES:\n${scrapedContent.map(s => `[${s.source}]: ${s.content}`).join('\n\n')}`
     : 'No scraped data available — use your training knowledge of Philippine law.';
 
-  const systemPrompt = `You are LexPH, the most authoritative Philippine legal research engine.
+  const systemPrompt = `You are LexPH, a Philippine legal research engine.
+CRITICAL: You MUST respond with ONLY a valid JSON object. No text before or after. No markdown. No code blocks. Start your response with { and end with }.
 
-CRITICAL RULES:
-1. Case titles are ALWAYS visible and NEVER hidden — they are the most vital result
-2. Only cite REAL Philippine Supreme Court cases with real G.R. numbers
-3. quoted_portion must be EXACT verbatim text from the actual decision or statute
-4. The court_interpretation field must explain how the Supreme Court specifically interpreted the provision or doctrine
-5. Respond ONLY with valid JSON — no markdown, no backticks, no preamble
-
-${scrapedSummary}
-
-QUERY CLASSIFICATION: ${JSON.stringify(classification)}`;
+RULES:
+- Only cite REAL Philippine Supreme Court cases with real G.R. numbers
+- quoted_portion must be actual verbatim text
+- Case titles are ALWAYS fully visible — never hide them
+- All strings must use proper JSON escaping (use \\n for newlines, \\" for quotes inside strings)`;
 
   const userPrompt = `Philippine legal query: "${query}"
+Classification: ${JSON.stringify(classification)}
+${scrapedContent.length ? `Scraped data: ${JSON.stringify(scrapedContent).slice(0, 1500)}` : ''}
 
-Produce a COMPREHENSIVE legal research result. Return ONLY this JSON structure:
-{
-  "topic": "Precise legal topic (e.g. 'Reckless Imprudence Resulting in Homicide under Article 365 RPC')",
-  "category": "Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative",
-  "keywords": ["4-6 specific legal keywords"],
-  "legal_interpretation": "5-6 sentence plain-language explanation DIRECTLY answering the query. Start with the most important principle. Cite specific articles and landmark cases inline. End with practical implication.",
-  "jurisprudence": [
-    {
-      "case_title": "FULL OFFICIAL CASE TITLE — ALWAYS VISIBLE (e.g. 'People of the Philippines v. Juan Dela Cruz')",
-      "gr_number": "G.R. No. XXXXXX",
-      "date_decided": "Month DD, YYYY",
-      "ponente": "Surname, J.",
-      "division": "En Banc|First Division|Second Division|Third Division",
-      "category": "Civil|Criminal|Labor|etc",
-      "doctrine": "The exact legal holding established in this case — what rule of law did the court set?",
-      "court_interpretation": "How did the Supreme Court specifically interpret the law in this case? What reasoning did it use? This is the court's actual legal reasoning.",
-      "facts": "3-4 sentence summary of the key material facts that led to the legal issue",
-      "issue": "The precise legal question the Court resolved — phrased as the Court stated it",
-      "ruling": "The Court's actual ruling: what it decided, the legal basis, and the ratio decidendi",
-      "quoted_portion": "EXACT VERBATIM quote from the decision — the most legally significant sentence (25-80 words). Must be actual text from the decision.",
-      "significance": "Why this case is important — what precedent does it set?",
-      "is_landmark": 1,
-      "elibrary_url": "https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent('GR ' + (classification.search_terms?.[0] || query))}",
-      "lawphil_url": "https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(query)}"
-    }
-  ],
-  "codal_provisions": [
-    {
-      "article_number": "Article XXXX / Section X, Rule XX",
-      "title": "Official title of the provision",
-      "full_text": "COMPLETE verbatim text of the provision exactly as enacted in law",
-      "quoted_portion": "The specific clause MOST DIRECTLY relevant to this query (15-60 words verbatim)",
-      "court_interpretation": "How have Philippine courts interpreted this provision? What is the established judicial construction? Cite specific cases.",
-      "source": "Full official statute name (e.g. Revised Penal Code, Republic Act No. XXXX)",
-      "source_short": "Short name (e.g. RPC, Civil Code, Labor Code)",
-      "source_url": "https://lawphil.net deep link to this specific article",
-      "officialgazette_url": "https://officialgazette.gov.ph link if applicable"
-    }
-  ],
-  "doctrines": [
-    {
-      "doctrine_name": "Official name of the legal doctrine",
-      "description": "Complete explanation of the doctrine, its elements, and how it applies to this specific query",
-      "elements": ["Element 1", "Element 2", "Element 3"],
-      "court_interpretation": "How has the Supreme Court applied and developed this doctrine? What are the key rulings?",
-      "legal_basis": "Specific statute article AND founding case (e.g. Article 2176, Civil Code; Picart v. Smith, G.R. No. XXXXX)",
-      "related_cases": "Most important case name and G.R. number",
-      "practical_application": "Concrete example of how a lawyer would apply this doctrine to the user's situation",
-      "category": "Civil|Criminal|Labor|etc"
-    }
-  ],
-  "analysis": "4-5 paragraph comprehensive synthesis. Paragraph 1: How the statutes apply. Paragraph 2: What the jurisprudence says. Paragraph 3: The governing doctrine. Paragraph 4: Practical legal advice. Be specific, cite articles and cases.",
-  "web_sources": [
-    {
-      "source_id": "sc|elibrary|offgazette|congress|senate|lawphil|chanrobles",
-      "name": "Source name",
-      "relevance": "What specific information this source has on this exact query",
-      "direct_url": "Most specific deep search URL for this query"
-    }
-  ]
-}
+Return ONLY this JSON (no other text):
+{"topic":"string","category":"Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative","keywords":["kw1","kw2"],"legal_interpretation":"5-6 sentences directly answering the query with article citations and case names","jurisprudence":[{"case_title":"Full case name","gr_number":"G.R. No. XXXXX","date_decided":"Month DD YYYY","ponente":"Surname J.","division":"En Banc|First Division|Second Division|Third Division","category":"Civil","doctrine":"exact holding","court_interpretation":"how SC interpreted the law","facts":"3 sentence summary","issue":"legal question resolved","ruling":"courts ruling and ratio","quoted_portion":"exact verbatim quote from decision 20-60 words","significance":"why this case matters","is_landmark":1,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+XXXXX","lawphil_url":"https://lawphil.net/judjuris/search.php?q=XXXXX"}],"codal_provisions":[{"article_number":"Article XXXX","title":"provision title","full_text":"complete verbatim text","quoted_portion":"most relevant clause verbatim","court_interpretation":"how courts have interpreted this","source":"Full statute name","source_short":"short name","source_url":"https://lawphil.net/..."}],"doctrines":[{"doctrine_name":"name","description":"full explanation","elements":["element 1","element 2"],"court_interpretation":"how SC applies this","legal_basis":"article and case","related_cases":"case name GR No","practical_application":"how lawyer applies this","category":"Civil"}],"analysis":"4 paragraphs: 1)statutes 2)jurisprudence 3)doctrine 4)practical advice","web_sources":[{"source_id":"lawphil","name":"Lawphil","relevance":"what it has on this query","direct_url":"https://lawphil.net/judjuris/search.php?q=ENCODED"}]}
 
-Return 2-4 jurisprudence cases, 2-3 codal provisions, 1-2 doctrines.`;
+Return 2-3 jurisprudence, 2 codal_provisions, 1-2 doctrines.`;
 
   setSearchStep('step-render', 'Stage 4 — Formatting comprehensive results…');
   const s3text = await callAI(systemPrompt, userPrompt, 8000);
 
-  let parsed;
-  try {
-    // Try direct parse
-    parsed = JSON.parse(s3text);
-  } catch(e) {
-    // Try to find JSON block
-    const jsonMatch = s3text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try { parsed = JSON.parse(jsonMatch[0]); }
-      catch(e2) { throw new Error('AI response could not be parsed. Please try again.'); }
-    } else {
-      throw new Error('AI returned invalid format. Please try again.');
-    }
+  let parsed = safeParseJSON(s3text);
+  if (!parsed || !parsed.topic) {
+    throw new Error('AI returned invalid format. Please try again.');
   }
 
   parsed.query = query;
