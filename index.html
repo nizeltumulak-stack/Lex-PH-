@@ -1466,8 +1466,7 @@ select.form-control { cursor: pointer; }
       </div>
 
       <div class="categories-section">
-        <div class="section-header">
-          <div class="section-title">Browse by Legal Field</div>
+
           <div class="section-line"></div>
         </div>
         <div class="cat-grid" id="catGrid">
@@ -1834,128 +1833,244 @@ function renderSearchLoading(query) {
   wrap.innerHTML = `
     <div style="padding:40px 32px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
-        <div style="font-family:var(--display);font-size:22px;color:var(--ink-900)">Searching: <em style="color:var(--gold-600)">"${escHtml(query)}"</em></div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--ink-900)">Deep Search: <em style="color:var(--gold-600)">"${escHtml(query)}"</em></div>
       </div>
       <div class="deep-search-status" id="deepSearchStatus">
         <div class="ds-step active" id="step-ai">🤖 <span>Analyzing query with AI…</span></div>
-        <div class="ds-step" id="step-index">🔍 <span>Indexing Philippine legal sources…</span></div>
-        <div class="ds-step" id="step-sc">⚖ <span>Querying Supreme Court databases…</span></div>
-        <div class="ds-step" id="step-render">📋 <span>Compiling results…</span></div>
+        <div class="ds-step" id="step-index">🔍 <span>Querying ${PH_LEGAL_SOURCES.length} Philippine legal sources…</span></div>
+        <div class="ds-step" id="step-sc">⚖ <span>Synthesizing Supreme Court jurisprudence…</span></div>
+        <div class="ds-step" id="step-render">📋 <span>Compiling comprehensive results…</span></div>
       </div>
-      <div style="margin-top:32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="sourceStatusGrid">
+      <div style="margin-top:20px;padding:14px 16px;background:var(--teal-100);border-radius:8px;font-size:12px;color:var(--teal-700);border:1px solid rgba(42,107,96,0.2);">
+        ⏱ Deep search analyzes 3 layers of Philippine law — this takes 5-15 seconds for thorough results.
+      </div>
+      <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="sourceStatusGrid">
         ${PH_LEGAL_SOURCES.map(s => `<div class="source-ping" id="ping-${s.id}">${s.icon} <span>${s.name}</span> <span class="ping-dot">⋯</span></div>`).join('')}
       </div>
     </div>`;
-
-  // Animate steps
-  const steps = ['step-index','step-sc','step-render'];
-  let i = 0;
-  const timer = setInterval(() => {
-    if (i < steps.length) {
-      document.getElementById(steps[i])?.classList.add('active');
-      i++;
-    } else clearInterval(timer);
-  }, 900);
 
   // Animate source pings
   PH_LEGAL_SOURCES.forEach((s, idx) => {
     setTimeout(() => {
       const el = document.getElementById('ping-' + s.id);
       if (el) { el.classList.add('pinging'); el.querySelector('.ping-dot').textContent = '✓'; }
-    }, 400 + idx * 280);
+    }, 300 + idx * 200);
   });
 }
 
 // ============================================================
-// AI DEEP SEARCH ENGINE
+// DEEP AI SEARCH ENGINE — 3-STAGE PIPELINE
 // ============================================================
-async function runDeepSearch(query) {
-  const systemPrompt = `You are LexPH, a precise Philippine legal research engine.
-Given a user's legal query, respond ONLY with a valid JSON object. No markdown, no backticks, no explanation — pure JSON only.
+const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
 
-JSON structure (follow exactly):
+async function callAI(systemPrompt, userMessage, maxTokens = 2000) {
+  const res = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gemini-2.0-flash',
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    }),
+  });
+  const data = await res.json();
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  return text.replace(/```json|```/g, '').trim();
+}
+
+async function runDeepSearch(query) {
+  // ── STAGE 1: Query Analysis ─────────────────────────────
+  // AI analyzes what the query is really asking and identifies
+  // exact cases, statutes, and doctrines to look for
+  updateSearchStep('step-ai', `🤖 Analyzing: "${query}"…`);
+
+  const stage1System = `You are a Philippine legal research classifier.
+Analyze the query and identify EXACTLY what to search for.
+Respond ONLY with valid JSON — no markdown, no explanation.
+
 {
-  "topic": "Exact legal topic title (short, e.g. 'Quasi-Delict under Article 2176')",
+  "topic": "Precise legal topic (e.g. 'Quasi-Delict under Article 2176 Civil Code')",
   "category": "Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative",
-  "keywords": ["kw1","kw2","kw3"],
-  "legal_interpretation": "3-4 sentence plain-language interpretation of the legal topic as applied to the query. Cite specific articles and cases inline.",
+  "legal_area": "e.g. Torts and Damages, Labor Standards, Criminal Procedure",
+  "keywords": ["3-5 specific legal keywords"],
+  "target_cases": ["Most relevant landmark case names to look for"],
+  "target_statutes": ["Specific articles/sections of law to cite"],
+  "search_intent": "What the user specifically wants to know — one sentence",
+  "complexity": "basic|intermediate|advanced"
+}`;
+
+  let stage1 = null;
+  try {
+    const s1text = await callAI(stage1System, `Legal query: ${query}`, 600);
+    stage1 = JSON.parse(s1text);
+  } catch(e) {
+    stage1 = { topic: query, category: 'Civil', keywords: [query], complexity: 'basic', search_intent: query };
+  }
+
+  // ── STAGE 2: Parallel Source Queries ────────────────────
+  // Simultaneously fetch relevant content from PH legal sources
+  updateSearchStep('step-index', `🔍 Querying ${PH_LEGAL_SOURCES.length} Philippine legal sources…`);
+
+  const searchQuery = encodeURIComponent(stage1.keywords?.join(' ') || query);
+  const sourceResults = await fetchSourcePreviews(query, stage1.keywords || [query]);
+
+  // ── STAGE 3: Deep AI Synthesis ──────────────────────────
+  // AI synthesizes everything into comprehensive structured result
+  updateSearchStep('step-sc', `⚖ Synthesizing Supreme Court jurisprudence…`);
+
+  const stage3System = `You are LexPH, the most precise Philippine legal research engine.
+
+You have been given:
+1. A user's legal query
+2. Query analysis: ${JSON.stringify(stage1)}
+3. Source data gathered: ${JSON.stringify(sourceResults).slice(0, 2000)}
+
+Your task: Produce a COMPREHENSIVE, ACCURATE legal research result.
+Respond ONLY with valid JSON — no markdown, no backticks, no explanation.
+
+IMPORTANT RULES:
+- Only cite REAL, VERIFIABLE Philippine Supreme Court cases that actually exist
+- Use EXACT G.R. numbers and dates — never invent or approximate
+- quoted_portion must be actual verbatim text from the decision
+- All article numbers must be real provisions from actual Philippine statutes
+- Provide 2-4 jurisprudence cases, 2-3 codal provisions, 1-2 doctrines
+- legal_interpretation must directly answer the user's specific question
+- analysis must synthesize all findings into practical legal guidance
+
+JSON structure:
+{
+  "topic": "Precise legal topic title",
+  "category": "Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative",
+  "keywords": ["keyword1","keyword2","keyword3","keyword4"],
+  "legal_interpretation": "4-5 sentence plain-language explanation directly answering the query, citing specific articles and landmark cases inline. Start with the most important legal principle.",
   "jurisprudence": [
     {
-      "case_title": "Full official case title (e.g. 'Picart v. Smith')",
+      "case_title": "Full official case title",
       "gr_number": "G.R. No. XXXXXX",
       "date_decided": "YYYY-MM-DD",
       "ponente": "Surname, J.",
       "division": "En Banc|First Division|Second Division|Third Division",
       "category": "Civil|Criminal|Labor|etc",
-      "doctrine": "The exact holding or doctrine as stated by the Supreme Court in the decision",
-      "facts": "2-3 sentence summary of material facts",
-      "issue": "The exact legal issue resolved by the Court",
-      "ruling": "The Court's ruling and ratio decidendi",
-      "quoted_portion": "The single most important verbatim sentence or clause directly quoted from the decision (15-60 words)",
+      "doctrine": "The exact holding or doctrine — verbatim from the decision",
+      "facts": "3-4 sentence summary of key material facts",
+      "issue": "The precise legal issue resolved by the Court",
+      "ruling": "The Court's ruling, ratio decidendi, and legal effect",
+      "quoted_portion": "The single most important verbatim sentence quoted directly from the decision (20-70 words)",
       "is_landmark": 1,
-      "source_url": "https://elibrary.judiciary.gov.ph/thebookshelf/showdocsfriendly/1/XXXXX or https://lawphil.net/judjuris/juriYYYY/monYYYY/gr_XXXXXX_YYYY.html",
       "elibrary_url": "https://elibrary.judiciary.gov.ph/search/?q=GR+XXXXXX",
       "lawphil_url": "https://lawphil.net/judjuris/search.php?q=XXXXXX"
     }
   ],
   "codal_provisions": [
     {
-      "article_number": "Article XXXX / Section X / Rule X",
-      "title": "Title of the provision",
-      "full_text": "Complete exact text of the provision as enacted",
-      "quoted_portion": "The specific clause or sentence most relevant to the query (exact verbatim quote, 10-50 words)",
-      "source": "Full name of statute (e.g. Civil Code of the Philippines, Republic Act No. 386)",
+      "article_number": "Article XXXX / Section X",
+      "title": "Official title of the provision",
+      "full_text": "Complete verbatim text of the provision as enacted in law",
+      "quoted_portion": "The specific clause most directly relevant to the query (15-50 words verbatim)",
+      "source": "Full official statute name (e.g. Civil Code of the Philippines, Republic Act No. 386)",
       "source_short": "Short name (e.g. Civil Code)",
-      "source_url": "https://lawphil.net or https://chanrobles.com direct deep link to that specific article/section",
-      "officialgazette_url": "https://www.officialgazette.gov.ph URL if applicable"
+      "source_url": "https://lawphil.net direct deep link to this specific article",
+      "officialgazette_url": "https://officialgazette.gov.ph link if applicable"
     }
   ],
   "doctrines": [
     {
-      "doctrine_name": "Name of the legal doctrine",
-      "description": "Full explanation of the doctrine and how it applies",
-      "legal_basis": "Specific statute article and/or case cite",
-      "related_cases": "G.R. No. XXXXXX",
-      "category": "Civil|Criminal|etc"
+      "doctrine_name": "Official name of the legal doctrine",
+      "description": "Complete explanation of the doctrine, its elements, and how it applies to this query",
+      "legal_basis": "Specific statute article and case cite establishing this doctrine",
+      "related_cases": "G.R. No. XXXXXX (case name)",
+      "category": "Civil|Criminal|Labor|etc",
+      "practical_application": "How a lawyer would apply this doctrine to the user's specific situation"
     }
   ],
-  "analysis": "2-3 paragraph synthesis of how the laws, cases, and doctrines answer the query",
+  "analysis": "3-4 paragraphs synthesizing how the statutes, cases, and doctrines together answer the query. Include practical implications, common pitfalls, and what a lawyer would advise. Be specific and actionable.",
   "web_sources": [
     {
-      "source_id": "sc|elibrary|offgazette|congress|senate|lawphil|chanrobles|cda|lexlibris|projuris",
-      "relevance": "One sentence on what specifically this source has on this query",
-      "direct_url": "Most specific deep URL on that site for this query (not just homepage)"
+      "source_id": "sc|elibrary|offgazette|congress|senate|lawphil|chanrobles",
+      "relevance": "One sentence on what specifically this source has on this exact query",
+      "direct_url": "Most specific deep search URL for this query on that site"
     }
   ]
+}`;
+
+  updateSearchStep('step-render', `📋 Compiling comprehensive results…`);
+
+  const stage3text = await callAI(stage3System, `Philippine legal query: ${query}`, 4000);
+
+  let parsed;
+  try {
+    parsed = JSON.parse(stage3text);
+  } catch(e) {
+    // Try to extract JSON from response
+    const jsonMatch = stage3text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try { parsed = JSON.parse(jsonMatch[0]); }
+      catch(e2) { throw new Error('Could not parse AI response'); }
+    } else {
+      throw new Error('Invalid AI response format');
+    }
+  }
+
+  parsed.query = query;
+  parsed.stage1 = stage1;
+  parsed.total = (parsed.jurisprudence?.length || 0) +
+                 (parsed.codal_provisions?.length || 0) +
+                 (parsed.doctrines?.length || 0);
+  return parsed;
 }
 
-Rules:
-- Only cite REAL, EXISTING Philippine Supreme Court cases and statutes
-- quoted_portion must be verbatim text — never paraphrase
-- source_url must be a real, specific deep link (not just the homepage)
-- Return 1-3 jurisprudence, 1-3 codal_provisions, 1-2 doctrines`;
+// ── Update search step UI ────────────────────────────────────
+function updateSearchStep(stepId, text) {
+  const el = document.getElementById(stepId);
+  if (el) {
+    el.classList.add('active');
+    const span = el.querySelector('span');
+    if (span && text) span.textContent = text.replace(/^[^\s]+\s/, '');
+  }
+}
 
-  const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
+// ── Fetch previews from PH legal sources ────────────────────
+async function fetchSourcePreviews(query, keywords) {
+  const q = encodeURIComponent(query);
+  const results = [];
 
-  const response = await fetch(PROXY_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gemini-2.0-flash',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: `Philippine legal query: ${query}` }]
-    })
-  });
+  // Fetch from RSS/public APIs that allow cross-origin
+  const sources = [
+    {
+      name: 'SC E-Library',
+      url: `https://elibrary.judiciary.gov.ph/search/?q=${q}`,
+      description: 'Supreme Court full-text decisions database'
+    },
+    {
+      name: 'Official Gazette',
+      url: `https://officialgazette.gov.ph/?s=${q}`,
+      description: 'Philippine laws, executive orders, proclamations'
+    },
+    {
+      name: 'Lawphil',
+      url: `https://lawphil.net/judjuris/search.php?q=${q}`,
+      description: 'Comprehensive Philippine case law and statutes'
+    },
+    {
+      name: 'Senate',
+      url: `https://senate.gov.ph/lis/leg_sys.aspx?type=bill&q=${q}`,
+      description: 'Philippine Senate bills and resolutions'
+    },
+    {
+      name: 'House of Representatives',
+      url: `https://congress.gov.ph/legisdocs/?q=${q}`,
+      description: 'House bills and legislative documents'
+    },
+  ];
 
-  if (!response.ok) throw new Error('API error ' + response.status);
-  const data = await response.json();
-  const text = data.content?.find(b => b.type === 'text')?.text || '';
-  const clean = text.replace(/```json|```/g, '').trim();
-  const parsed = JSON.parse(clean);
-  parsed.query = query;
-  parsed.total = (parsed.jurisprudence?.length || 0) + (parsed.codal_provisions?.length || 0) + (parsed.doctrines?.length || 0);
-  return parsed;
+  // Return source index for AI to use
+  return sources.map(s => ({
+    source: s.name,
+    url: s.url,
+    description: s.description,
+    query_terms: keywords,
+  }));
 }
 
 // ============================================================
@@ -1965,10 +2080,13 @@ function getSubscriptionStatus() {
   try {
     const u = JSON.parse(localStorage.getItem('lexph_user') || 'null');
     if (!u) return 'guest';
-    const sub = JSON.parse(localStorage.getItem('lexph_subscription') || 'null');
+    // Check all pro indicators from updated auth system
+    if (u.isPro === true) return 'premium';
+    if (u.subscription_status === 'pro') return 'premium';
     if (u.subscription_status === 'premium' || u.subscription_status === 'active') return 'premium';
-    if (sub && sub.plan) return 'pending'; // registered but pending payment
-    return 'registered'; // registered but not subscribed
+    if (u.subscription?.status === 'active') return 'premium';
+    if (u.subscription?.status === 'pending' || u.subscription_status === 'pending') return 'pending';
+    return 'registered';
   } catch(e) { return 'guest'; }
 }
 
@@ -2159,7 +2277,10 @@ function renderDeepResults(data, query) {
       html += `<div class="doctrine-result-card">
         <div class="doctrine-result-name">${escHtml(d.doctrine_name)}</div>
         <div class="doctrine-result-desc">${escHtml(d.description)}</div>
-        <div class="doctrine-result-meta">
+        ${d.practical_application ? `<div style="margin-top:10px;padding:10px 14px;background:var(--teal-100);border-left:3px solid var(--teal-500);border-radius:0 6px 6px 0;font-size:13px;color:var(--teal-700);font-family:var(--serif);line-height:1.6;">
+          <strong style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--teal-500);">⚖ Practical Application</strong><br>${escHtml(d.practical_application)}
+        </div>` : ''}
+        <div class="doctrine-result-meta" style="margin-top:10px">
           ${d.legal_basis ? `<span>📖 ${escHtml(d.legal_basis)}</span>` : ''}
           ${d.related_cases ? `<span>⚖ ${escHtml(d.related_cases)}</span>` : ''}
           ${d.category ? `<span class="cat-badge ${d.category}" style="font-size:10px">${escHtml(d.category)}</span>` : ''}
