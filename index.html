@@ -1821,13 +1821,7 @@ async function doSearch(query) {
     renderDeepResults(result, query);
   } catch (e) {
     console.error('Search error:', e);
-    document.getElementById('resultsContent').innerHTML = `
-      <div style="padding:40px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:16px;">⚠️</div>
-        <div style="font-family:var(--display);font-size:20px;color:var(--text-primary);margin-bottom:8px;">Search Error</div>
-        <div style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">${escHtml(e.message || 'Unknown error. Check your connection.')}</div>
-        <button onclick="doSearch(document.getElementById('header-q').value)" style="padding:10px 24px;background:var(--gold-600);color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;">Try Again</button>
-      </div>`;
+    document.getElementById('resultsContent').innerHTML = '<div style="padding:48px;text-align:center;"><div style="font-size:36px;margin-bottom:16px">⚠️</div><div style="font-family:var(--display);font-size:20px;color:var(--text-primary);margin-bottom:8px">Search Error</div><div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">' + escHtml(e.message || 'Could not connect. Please try again.') + '</div><button onclick="doSearch(document.getElementById(\'header-q\').value)" style="padding:10px 24px;background:var(--gold-600);color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600">🔄 Try Again</button></div>';
   }
 }
 
@@ -1839,224 +1833,118 @@ function renderSearchLoading(query) {
   wrap.innerHTML = `
     <div style="padding:40px 32px">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
-        <div style="font-family:var(--display);font-size:22px;color:var(--ink-900)">🔍 Deep Search: <em style="color:var(--gold-600)">"${escHtml(query)}"</em></div>
+        <div style="font-family:var(--display);font-size:22px;color:var(--ink-900)">Searching: <em style="color:var(--gold-600)">"${escHtml(query)}"</em></div>
       </div>
       <div class="deep-search-status" id="deepSearchStatus">
-        <div class="ds-step active" id="step-ai">🤖 <span>Stage 1 — AI analyzing legal query…</span></div>
-        <div class="ds-step" id="step-index">🌐 <span>Stage 2 — Scraping Philippine legal sources…</span></div>
-        <div class="ds-step" id="step-sc">⚖ <span>Stage 3 — AI synthesizing jurisprudence & statutes…</span></div>
-        <div class="ds-step" id="step-render">📋 <span>Stage 4 — Formatting comprehensive results…</span></div>
+        <div class="ds-step active" id="step-ai">🤖 <span>Analyzing query with AI…</span></div>
+        <div class="ds-step" id="step-index">🔍 <span>Indexing Philippine legal sources…</span></div>
+        <div class="ds-step" id="step-sc">⚖ <span>Querying Supreme Court databases…</span></div>
+        <div class="ds-step" id="step-render">📋 <span>Compiling results…</span></div>
       </div>
-      <div style="margin-top:16px;padding:12px 16px;background:var(--teal-100);border-radius:8px;font-size:12px;color:var(--teal-700);border:1px solid rgba(42,107,96,0.2);">
-        ⏱ Deep AI search scrapes real Philippine legal databases — allow 10-20 seconds for thorough results.
-      </div>
-      <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="sourceStatusGrid">
+      <div style="margin-top:32px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="sourceStatusGrid">
         ${PH_LEGAL_SOURCES.map(s => `<div class="source-ping" id="ping-${s.id}">${s.icon} <span>${s.name}</span> <span class="ping-dot">⋯</span></div>`).join('')}
       </div>
     </div>`;
+
+  // Animate steps
+  const steps = ['step-index','step-sc','step-render'];
+  let i = 0;
+  const timer = setInterval(() => {
+    if (i < steps.length) {
+      document.getElementById(steps[i])?.classList.add('active');
+      i++;
+    } else clearInterval(timer);
+  }, 900);
 
   // Animate source pings
   PH_LEGAL_SOURCES.forEach((s, idx) => {
     setTimeout(() => {
       const el = document.getElementById('ping-' + s.id);
       if (el) { el.classList.add('pinging'); el.querySelector('.ping-dot').textContent = '✓'; }
-    }, 300 + idx * 200);
-  });
-}
-
-function setSearchStep(id, text) {
-  document.querySelectorAll('.ds-step').forEach(s => {
-    if (s.id === id) { s.classList.add('active'); if (text) s.querySelector('span').textContent = text; }
+    }, 400 + idx * 280);
   });
 }
 
 // ============================================================
-// DEEP AI SEARCH ENGINE — 4-STAGE PIPELINE
+// AI DEEP SEARCH ENGINE
+// ============================================================
+// ============================================================
+// DEEP AI SEARCH ENGINE
 // ============================================================
 const PROXY_URL = 'https://lexph-api-proxy.nizeltumulak.workers.dev';
 
-async function callAI(system, userMsg, maxTokens = 4000) {
+function setSearchStep(id, text) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('active');
+    const span = el.querySelector('span');
+    if (span && text) span.textContent = text;
+  }
+}
+
+async function callAI(userMsg, maxTokens) {
   const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gemini-2.0-flash',
-      max_tokens: maxTokens,
-      system,
+      max_tokens: maxTokens || 4000,
+      system: 'You are a Philippine legal research engine. Respond ONLY with a valid JSON object. Start your response with { and end with }. No markdown, no code blocks, no explanation whatsoever.',
       messages: [{ role: 'user', content: userMsg }],
     }),
   });
-  if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+  if (!res.ok) throw new Error('API error: ' + res.status);
   const data = await res.json();
-  const text = data.content?.find(b => b.type === 'text')?.text || '';
-  // Aggressively clean the response to extract JSON
-  return extractJSON(text);
-}
-
-function extractJSON(text) {
-  if (!text) return '{}';
-  // Remove markdown code blocks
-  let clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-  // Find the outermost JSON object
-  const start = clean.indexOf('{');
-  const end = clean.lastIndexOf('}');
-  if (start !== -1 && end !== -1 && end > start) {
-    return clean.slice(start, end + 1);
-  }
-  return clean;
-}
-
-function safeParseJSON(text) {
-  const clean = extractJSON(text);
-  try {
-    return JSON.parse(clean);
-  } catch(e) {
-    // Try to fix common issues
-    try {
-      // Fix unescaped quotes in strings
-      const fixed = clean
-        .replace(/[\u0000-\u001F]/g, ' ') // remove control chars
-        .replace(/,\s*}/g, '}')           // trailing commas
-        .replace(/,\s*]/g, ']');          // trailing commas in arrays
-      return JSON.parse(fixed);
-    } catch(e2) {
-      return null;
-    }
-  }
-}
-
-async function scrapeUrl(url) {
-  try {
-    const res = await fetch(`${PROXY_URL}/scrape`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
-    });
-    const data = await res.json();
-    return data.content || '';
-  } catch (e) {
-    return '';
-  }
+  const raw = data.content?.find(b => b.type === 'text')?.text || '';
+  const s = raw.indexOf('{');
+  const e = raw.lastIndexOf('}');
+  if (s === -1 || e === -1) throw new Error('AI returned invalid format. Please try again.');
+  let clean = raw.slice(s, e + 1);
+  // Fix common JSON issues
+  clean = clean.replace(/[ --]/g, ' ');
+  clean = clean.replace(/,(\s*[}\]])/g, '$1');
+  try { return JSON.parse(clean); }
+  catch(err) { throw new Error('AI returned invalid format. Please try again.'); }
 }
 
 async function runDeepSearch(query) {
-  // ── STAGE 1: Get cases & statutes ───────────────────────
-  setSearchStep('step-ai', 'Stage 1 — Finding relevant cases and statutes…');
+  // STAGE 1: Cases & Statutes
+  setSearchStep('step-ai', 'Stage 1 — Finding relevant cases & statutes…');
 
-  const s1system = `You are a Philippine legal research engine. Return ONLY valid JSON starting with { and ending with }. No markdown, no explanation, no code blocks.`;
-
-  const s1prompt = `Philippine legal query: "${query}"
-
-Return this JSON with REAL Philippine cases and statutes:
-{"topic":"short precise topic","category":"Labor","keywords":["kw1","kw2","kw3"],"legal_interpretation":"5 sentences directly answering the query citing specific articles and cases","jurisprudence":[{"case_title":"Full case name v. other party","gr_number":"G.R. No. 123456","date_decided":"January 1 2000","ponente":"Surname J.","division":"Third Division","category":"Labor","doctrine":"exact legal holding","court_interpretation":"how SC interpreted the law","facts":"3 sentence facts","issue":"legal question resolved","ruling":"courts ruling","quoted_portion":"exact verbatim quote","significance":"why this matters","is_landmark":1,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+123456","lawphil_url":"https://lawphil.net/judjuris/search.php?q=123456"}],"codal_provisions":[{"article_number":"Article 279","title":"title","full_text":"complete verbatim text","quoted_portion":"most relevant clause","court_interpretation":"judicial interpretation","source":"Labor Code of the Philippines","source_short":"Labor Code","source_url":"https://lawphil.net/statutes/presdec/pd1974/pd_442_1974.html"}]}`;
-
-  setSearchStep('step-index', 'Stage 2 — Analyzing jurisprudence…');
-  const s1text = await callAI(s1system, s1prompt, 6000);
-  const s1data = safeParseJSON(s1text);
-
-  if (!s1data || !s1data.topic) {
-    throw new Error('Could not retrieve legal data. Please try again.');
-  }
-
-  // ── STAGE 2: Get doctrines & analysis ───────────────────
-  setSearchStep('step-sc', 'Stage 3 — Synthesizing legal doctrines…');
-
-  const s2prompt = `Philippine legal query: "${query}", Topic: ${s1data.topic}
-
-Return ONLY this JSON:
-{"doctrines":[{"doctrine_name":"doctrine name","description":"full explanation","elements":["element 1","element 2"],"court_interpretation":"how SC applied this with key cases","legal_basis":"Article X; CaseName G.R. No. XXXXX","related_cases":"CaseName G.R. No. XXXXX","practical_application":"how lawyer applies this","category":"Labor"}],"analysis":"Paragraph 1: How the statutes apply. Paragraph 2: What the SC has ruled. Paragraph 3: The governing doctrine. Paragraph 4: Practical legal advice.","web_sources":[{"source_id":"elibrary","name":"SC E-Library","relevance":"full text SC decisions","direct_url":"https://elibrary.judiciary.gov.ph/search/?q=illegal+dismissal"},{"source_id":"lawphil","name":"Lawphil","relevance":"case law database","direct_url":"https://lawphil.net/judjuris/search.php?q=illegal+dismissal"}]}`;
-
-  setSearchStep('step-render', 'Stage 4 — Compiling results…');
-  const s2text = await callAI(s1system, s2prompt, 4000);
-  const s2data = safeParseJSON(s2text) || {};
-
-  return {
-    ...s1data,
-    doctrines: s2data.doctrines || [],
-    analysis: s2data.analysis || '',
-    web_sources: s2data.web_sources || [],
-    query,
-    scraped_sources: 0,
-    total: (s1data.jurisprudence?.length || 0) + (s1data.codal_provisions?.length || 0) + (s2data.doctrines?.length || 0),
-  };
-}
-`,
-    800
+  const result1 = await callAI(
+    'Philippine legal query: "' + query + '"\n\nReturn ONLY valid JSON with real Philippine Supreme Court cases and statutes:\n{"topic":"short precise legal topic","category":"Civil","keywords":["kw1","kw2","kw3"],"legal_interpretation":"5 sentences directly answering the query with specific article and case citations","jurisprudence":[{"case_title":"Full Official Case Title v. Other Party","gr_number":"G.R. No. 123456","date_decided":"January 1 2000","ponente":"Lastname J.","division":"Third Division","category":"Civil","doctrine":"exact legal holding","court_interpretation":"how the Supreme Court interpreted the law in this case and its reasoning","facts":"3 sentence summary of material facts","issue":"exact legal question resolved by the Court","ruling":"the Courts ruling and ratio decidendi","quoted_portion":"exact verbatim quote from the decision 25-60 words","significance":"why this case is significant as precedent","is_landmark":1,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+123456","lawphil_url":"https://lawphil.net/judjuris/search.php?q=123456"},{"case_title":"Second Case v. Party","gr_number":"G.R. No. 234567","date_decided":"June 15 2010","ponente":"Lastname J.","division":"En Banc","category":"Civil","doctrine":"holding","court_interpretation":"SC interpretation","facts":"facts","issue":"issue","ruling":"ruling","quoted_portion":"verbatim quote","significance":"significance","is_landmark":0,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+234567","lawphil_url":"https://lawphil.net/judjuris/search.php?q=234567"}],"codal_provisions":[{"article_number":"Article 279","title":"Provision Title","full_text":"complete verbatim statutory text exactly as written","quoted_portion":"most relevant clause verbatim","court_interpretation":"how Philippine courts have interpreted this provision with case citations","source":"Full Statute Name Republic Act No. XXXX","source_short":"Short Name","source_url":"https://lawphil.net/statutes/presdec/pd1974/pd_442_1974.html"},{"article_number":"Article 277","title":"Title","full_text":"verbatim text","quoted_portion":"relevant clause","court_interpretation":"interpretation","source":"Statute Name","source_short":"Short","source_url":"https://lawphil.net/statutes/presdec/pd1974/pd_442_1974.html"}]}',
+    6000
   );
 
-  let classification = {};
-  try { classification = safeParseJSON(s1) || {}; } catch(e) {
-    classification = { topic: query, category: 'Civil', search_terms: [query] };
-  }
+  setSearchStep('step-index', 'Stage 2 — Analyzing doctrines…');
+  setSearchStep('step-sc', 'Stage 3 — Synthesizing analysis…');
 
-  // ── STAGE 2: Web Scraping ────────────────────────────────
-  setSearchStep('step-index', 'Stage 2 — Scraping Philippine legal databases…');
+  // STAGE 2: Doctrines & Analysis
+  const result2 = await callAI(
+    'Philippine legal query: "' + query + '", Topic: ' + (result1.topic || query) + '\n\nReturn ONLY valid JSON:\n{"doctrines":[{"doctrine_name":"Official Doctrine Name","description":"complete explanation of this doctrine and its elements","elements":["element 1","element 2","element 3"],"court_interpretation":"how the Supreme Court has applied and developed this doctrine with specific case citations","legal_basis":"Article X of Statute; CaseName G.R. No. XXXXX","related_cases":"CaseName v. Party G.R. No. XXXXX","practical_application":"concrete example of how a lawyer applies this doctrine to the query situation","category":"Civil"}],"analysis":"Paragraph 1: How specific statutes apply to this query. Paragraph 2: What relevant Supreme Court jurisprudence establishes. Paragraph 3: The governing legal doctrine and its elements. Paragraph 4: Practical legal advice for someone asking this question.","web_sources":[{"source_id":"elibrary","name":"SC E-Library","relevance":"full text Supreme Court decisions","direct_url":"https://elibrary.judiciary.gov.ph/search/?q=QUERY"},{"source_id":"lawphil","name":"Lawphil","relevance":"comprehensive case law","direct_url":"https://lawphil.net/judjuris/search.php?q=QUERY"},{"source_id":"chanrobles","name":"ChanRobles","relevance":"statutes and jurisprudence","direct_url":"https://chanrobles.com/search?q=QUERY"},{"source_id":"offgazette","name":"Official Gazette","relevance":"official laws","direct_url":"https://officialgazette.gov.ph/?s=QUERY"}]}',
+    4000
+  );
 
-  const scrapedContent = [];
+  setSearchStep('step-render', 'Stage 4 — Formatting results…');
 
-  // Scrape Lawphil search results
-  const lawphilUrl = classification.lawphil_search_url ||
-    `https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(classification.search_terms?.join(' ') || query)}`;
-
-  const [lawphilContent, elibraryContent] = await Promise.all([
-    scrapeUrl(lawphilUrl),
-    scrapeUrl(classification.elibrary_search_url ||
-      `https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent(query)}`),
-  ]);
-
-  if (lawphilContent) scrapedContent.push({ source: 'Lawphil', url: lawphilUrl, content: lawphilContent.slice(0, 3000) });
-  if (elibraryContent) scrapedContent.push({ source: 'SC E-Library', content: elibraryContent.slice(0, 3000) });
-
-  // Mark sources as scraped in UI
-  ['lawphil', 'elibrary', 'sc'].forEach(id => {
-    const el = document.getElementById('ping-' + id);
-    if (el) { el.style.borderColor = 'var(--teal-500)'; el.querySelector('.ping-dot').textContent = '✓'; }
-  });
-
-  // ── STAGE 3: AI Deep Synthesis ───────────────────────────
-  setSearchStep('step-sc', 'Stage 3 — AI synthesizing Supreme Court jurisprudence…');
-
-  const scrapedSummary = scrapedContent.length > 0
-    ? `SCRAPED DATA FROM PHILIPPINE LEGAL SOURCES:\n${scrapedContent.map(s => `[${s.source}]: ${s.content}`).join('\n\n')}`
-    : 'No scraped data available — use your training knowledge of Philippine law.';
-
-  const systemPrompt = `You are LexPH, a Philippine legal research engine.
-CRITICAL: You MUST respond with ONLY a valid JSON object. No text before or after. No markdown. No code blocks. Start your response with { and end with }.
-
-RULES:
-- Only cite REAL Philippine Supreme Court cases with real G.R. numbers
-- quoted_portion must be actual verbatim text
-- Case titles are ALWAYS fully visible — never hide them
-- All strings must use proper JSON escaping (use \\n for newlines, \\" for quotes inside strings)`;
-
-  const userPrompt = `Philippine legal query: "${query}"
-Classification: ${JSON.stringify(classification)}
-${scrapedContent.length ? `Scraped data: ${JSON.stringify(scrapedContent).slice(0, 1500)}` : ''}
-
-Return ONLY this JSON (no other text):
-{"topic":"string","category":"Civil|Criminal|Labor|Constitutional|Commercial|Family|Tax|Remedial|Administrative","keywords":["kw1","kw2"],"legal_interpretation":"5-6 sentences directly answering the query with article citations and case names","jurisprudence":[{"case_title":"Full case name","gr_number":"G.R. No. XXXXX","date_decided":"Month DD YYYY","ponente":"Surname J.","division":"En Banc|First Division|Second Division|Third Division","category":"Civil","doctrine":"exact holding","court_interpretation":"how SC interpreted the law","facts":"3 sentence summary","issue":"legal question resolved","ruling":"courts ruling and ratio","quoted_portion":"exact verbatim quote from decision 20-60 words","significance":"why this case matters","is_landmark":1,"elibrary_url":"https://elibrary.judiciary.gov.ph/search/?q=GR+XXXXX","lawphil_url":"https://lawphil.net/judjuris/search.php?q=XXXXX"}],"codal_provisions":[{"article_number":"Article XXXX","title":"provision title","full_text":"complete verbatim text","quoted_portion":"most relevant clause verbatim","court_interpretation":"how courts have interpreted this","source":"Full statute name","source_short":"short name","source_url":"https://lawphil.net/..."}],"doctrines":[{"doctrine_name":"name","description":"full explanation","elements":["element 1","element 2"],"court_interpretation":"how SC applies this","legal_basis":"article and case","related_cases":"case name GR No","practical_application":"how lawyer applies this","category":"Civil"}],"analysis":"4 paragraphs: 1)statutes 2)jurisprudence 3)doctrine 4)practical advice","web_sources":[{"source_id":"lawphil","name":"Lawphil","relevance":"what it has on this query","direct_url":"https://lawphil.net/judjuris/search.php?q=ENCODED"}]}
-
-Return 2-3 jurisprudence, 2 codal_provisions, 1-2 doctrines.`;
-
-  setSearchStep('step-render', 'Stage 4 — Formatting comprehensive results…');
-  const s3text = await callAI(systemPrompt, userPrompt, 8000);
-
-  let parsed = safeParseJSON(s3text);
-  if (!parsed || !parsed.topic) {
-    throw new Error('AI returned invalid format. Please try again.');
-  }
-
-  parsed.query = query;
-  parsed.classification = classification;
-  parsed.scraped_sources = scrapedContent.length;
-  parsed.total = (parsed.jurisprudence?.length || 0) +
-                 (parsed.codal_provisions?.length || 0) +
-                 (parsed.doctrines?.length || 0);
-  return parsed;
+  return {
+    topic: result1.topic || query,
+    category: result1.category || 'Civil',
+    keywords: result1.keywords || [],
+    legal_interpretation: result1.legal_interpretation || '',
+    jurisprudence: result1.jurisprudence || [],
+    codal_provisions: result1.codal_provisions || [],
+    doctrines: result2.doctrines || [],
+    analysis: result2.analysis || '',
+    web_sources: result2.web_sources || [],
+    query,
+    scraped_sources: 0,
+    total: (result1.jurisprudence?.length || 0) + (result1.codal_provisions?.length || 0) + (result2.doctrines?.length || 0),
+  };
 }
 
 // ============================================================
-// SUBSCRIPTION STATUS CHECK
+// RENDER STRUCTURED RESULTS
 // ============================================================
 function getSubscriptionStatus() {
   try {
@@ -2074,31 +1962,31 @@ function renderDeepResults(data, query) {
   const wrap = document.getElementById('resultsContent');
   const subStatus = getSubscriptionStatus();
   const isPro = subStatus === 'premium';
+  // Free registered users can see content but case title + source links are blurred
   const isGuest = subStatus === 'guest';
-
-  // Case titles are ALWAYS visible — they are vital
-  // Only source links are locked for non-pro
-  const lockLinks = !isPro;
+  const blurCase = false; // Case titles always visible
 
   const cat = data.category || '';
   const catBadge = cat ? `<span class="cat-badge ${cat}">${cat} Law</span>` : '';
 
-  let html = `<div class="result-document">`;
+  let html = '';
 
-  // ── TOPIC HEADER ──────────────────────────────────────────
+  // ── DOCUMENT WRAPPER ──
+  html += `<div class="result-document">`;
+
+  // ── TOPIC HEADER ──
   html += `
     <div class="result-topic-bar">
-      <div class="result-topic-label">🔍 Deep AI Legal Research Result</div>
+      <div class="result-topic-label">Legal Research Result</div>
       <div class="result-topic-title">${escHtml(data.topic || query)} ${catBadge}</div>
       <div class="result-topic-meta">
-        <span class="result-badge">📡 ${data.scraped_sources || 0} Sources Scraped</span>
-        <span class="result-badge">⚖ ${PH_LEGAL_SOURCES.length} Sources Indexed</span>
+        <span class="result-badge">🔍 ${PH_LEGAL_SOURCES.length} Sources Indexed</span>
         <span class="result-badge">📋 ${data.total || 0} Citations Found</span>
         ${(data.keywords||[]).map(k => `<span class="result-badge" style="background:rgba(255,255,255,0.08);color:rgba(240,232,216,0.7)">${escHtml(k)}</span>`).join('')}
       </div>
     </div>`;
 
-  // ── SECTION 1: LEGAL INTERPRETATION ─────────────────────
+  // ── SECTION 1: LEGAL INTERPRETATION ──
   if (data.legal_interpretation) {
     html += `
       <div class="result-section">
@@ -2110,7 +1998,7 @@ function renderDeepResults(data, query) {
       </div>`;
   }
 
-  // ── SECTION 2: JURISPRUDENCE ─────────────────────────────
+  // ── SECTION 2: JURISPRUDENCE ──
   if (data.jurisprudence?.length) {
     html += `
       <div class="result-section">
@@ -2119,80 +2007,89 @@ function renderDeepResults(data, query) {
           <div class="result-section-title">Jurisprudence — Supreme Court Decisions</div>
         </div>`;
 
-    data.jurisprudence.forEach((c) => {
+    data.jurisprudence.forEach((c, i) => {
       const landmark = c.is_landmark == 1 ? '<span class="result-badge landmark">★ Landmark</span>' : '';
-      const elibraryUrl = c.elibrary_url || `https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent(c.gr_number || query)}`;
-      const lawphilUrl = c.lawphil_url || `https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(c.gr_number || query)}`;
+      const sourceUrl = c.elibrary_url || c.source_url || `https://elibrary.judiciary.gov.ph/search/?q=${encodeURIComponent(c.gr_number)}`;
+      const lawphilUrl = c.lawphil_url || `https://lawphil.net/judjuris/search.php?q=${encodeURIComponent(c.gr_number)}`;
+      // Highlight quoted portion in doctrine text
+      let doctrineHtml = escHtml(c.doctrine);
+      if (c.quoted_portion) {
+        const qEsc = escHtml(c.quoted_portion);
+        doctrineHtml = doctrineHtml.replace(qEsc, `<mark class="codal-highlight">${qEsc}</mark>`);
+      }
 
       html += `<div class="juri-card">
         <div class="juri-header">
           <div class="juri-title-block">
-            <div class="juri-case-title">${escHtml(c.case_title)}</div>
+            <div class="juri-case-title${blurCase ? ' blurred' : ''}">${escHtml(c.case_title)}</div>
             <div class="juri-meta-row">
-              <span class="juri-gr">${escHtml(c.gr_number)}</span>
-              <span class="juri-date">${escHtml(c.date_decided || '')}</span>
+              <span class="juri-gr${blurCase ? ' blurred' : ''}">${escHtml(c.gr_number)}</span>
+              <span class="juri-date">${formatDate(c.date_decided)}</span>
               ${c.ponente ? `<span class="juri-ponente">${escHtml(c.ponente)}</span>` : ''}
               ${c.division ? `<span class="juri-date">${escHtml(c.division)}</span>` : ''}
               ${landmark}
             </div>
           </div>
           <div class="juri-actions">
-            ${lockLinks
-              ? `<button class="juri-source-btn" onclick="showPaywall()" style="cursor:pointer;border:none;">🔒 SC E-Library</button>
-                 <button class="juri-source-btn" style="background:var(--ink-600);cursor:pointer;border:none;" onclick="showPaywall()">🔒 Lawphil</button>`
-              : `<a href="${elibraryUrl}" target="_blank" rel="noopener" class="juri-source-btn">SC E-Library ↗</a>
-                 <a href="${lawphilUrl}" target="_blank" rel="noopener" class="juri-source-btn" style="background:var(--ink-600)">Lawphil ↗</a>`
-            }
+            <a href="${sourceUrl}" target="_blank" rel="noopener"
+               class="juri-source-btn${blurCase ? ' blurred' : ''}"
+               onclick="${blurCase ? 'event.preventDefault();showPaywall()' : ''}">
+              SC E-Library ↗
+            </a>
+            <a href="${lawphilUrl}" target="_blank" rel="noopener"
+               class="juri-source-btn${blurCase ? ' blurred' : ''}"
+               style="background:var(--ink-600)"
+               onclick="${blurCase ? 'event.preventDefault();showPaywall()' : ''}">
+              Lawphil ↗
+            </a>
           </div>
         </div>
         <div class="juri-body">
           ${c.doctrine ? `<div class="juri-field">
-            <div class="juri-field-label">⚖ Doctrine / Holding</div>
-            <div class="juri-field-value">${escHtml(c.doctrine)}</div>
+            <div class="juri-field-label">Doctrine / Holding</div>
+            <div class="juri-field-value">${doctrineHtml}</div>
           </div>` : ''}
           ${c.quoted_portion ? `<div class="juri-field">
             <div class="juri-field-label">📌 Quoted Portion from Decision</div>
-            <blockquote class="codal-quote" style="margin:0">"${escHtml(c.quoted_portion)}"</blockquote>
-          </div>` : ''}
-          ${c.court_interpretation ? `<div class="juri-field">
-            <div class="juri-field-label">🏛 Court's Interpretation</div>
-            <div class="juri-field-value" style="background:var(--teal-100);padding:10px 14px;border-left:3px solid var(--teal-500);border-radius:0 6px 6px 0;">${escHtml(c.court_interpretation)}</div>
+            <div class="codal-quote" style="margin:0">${escHtml(c.quoted_portion)}</div>
           </div>` : ''}
           ${c.facts ? `<div class="juri-field">
-            <div class="juri-field-label">📄 Facts</div>
+            <div class="juri-field-label">Facts</div>
             <div class="juri-field-value">${escHtml(c.facts)}</div>
           </div>` : ''}
           ${c.issue ? `<div class="juri-field">
-            <div class="juri-field-label">❓ Issue</div>
-            <div class="juri-field-value" style="font-style:italic;">${escHtml(c.issue)}</div>
+            <div class="juri-field-label">Issue</div>
+            <div class="juri-field-value">${escHtml(c.issue)}</div>
           </div>` : ''}
           ${c.ruling ? `<div class="juri-field">
-            <div class="juri-field-label">✅ Ruling</div>
+            <div class="juri-field-label">Ruling</div>
             <div class="juri-field-value">${escHtml(c.ruling)}</div>
-          </div>` : ''}
-          ${c.significance ? `<div class="juri-field">
-            <div class="juri-field-label">💡 Significance</div>
-            <div class="juri-field-value" style="color:var(--gold-600);font-weight:500;">${escHtml(c.significance)}</div>
           </div>` : ''}
         </div>
       </div>`;
     });
 
-    // Show paywall for source links only (not case titles)
-    if (lockLinks) {
-      html += `<div style="background:var(--gold-100);border:1px solid var(--gold-200);border-radius:var(--radius-md);padding:14px 18px;margin-top:8px;display:flex;align-items:center;gap:12px;">
-        <span style="font-size:20px;">🔒</span>
-        <div>
-          <div style="font-weight:700;font-size:13px;color:var(--ink-900)">Unlock Direct Source Links</div>
-          <div style="font-size:12px;color:var(--ink-600)">Subscribe to Pro to access SC E-Library, Lawphil, and all direct case links.</div>
+    // Paywall for non-pro
+    if (blurCase) {
+      html += `<div style="position:relative;min-height:60px">
+        <div class="paywall-overlay" style="position:relative;background:none;border:1.5px dashed var(--gold-400);border-radius:var(--radius-md);padding:16px;margin-top:8px">
+          <div class="paywall-msg">
+            <div class="paywall-icon">🔒</div>
+            <div class="paywall-title">Case Title & Sources Locked</div>
+            <div class="paywall-sub">${isGuest ? 'Create a free account to see more, or' : 'Subscribe to Pro to'} unlock full case titles, G.R. numbers, and direct source links.</div>
+            ${isGuest
+              ? `<a href="register-modal.html" class="paywall-btn">Register Free</a>&nbsp;&nbsp;<a href="subscribe.html" class="paywall-btn" style="background:var(--ink-700)">Subscribe Pro</a>`
+              : `<a href="subscribe.html" class="paywall-btn">Upgrade to Pro ₱199/mo</a>`
+            }
+          </div>
         </div>
-        <a href="subscribe.html" style="margin-left:auto;padding:8px 16px;background:var(--gold-600);color:white;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;">Upgrade Pro ₱199/mo</a>
       </div>`;
     }
+
     html += `</div>`;
   }
 
-  // ── SECTION 3: CODAL PROVISIONS ─────────────────────────
+  // ── SECTION 3: CODAL PROVISIONS ──
   if (data.codal_provisions?.length) {
     html += `
       <div class="result-section">
@@ -2202,7 +2099,14 @@ function renderDeepResults(data, query) {
         </div>`;
 
     data.codal_provisions.forEach(law => {
-      const sourceUrl = law.source_url || `https://lawphil.net/statutes/search.php?q=${encodeURIComponent(law.article_number || '')}`;
+      const sourceUrl = law.source_url || `https://lawphil.net/statutes/search.php?q=${encodeURIComponent(law.article_number)}`;
+      const ogUrl = law.officialgazette_url || `https://www.officialgazette.gov.ph/?s=${encodeURIComponent(law.source_short || law.source)}`;
+      // Highlight quoted portion inside full text
+      let fullTextHtml = escHtml(law.full_text || law.content || '');
+      if (law.quoted_portion) {
+        const qEsc = escHtml(law.quoted_portion);
+        fullTextHtml = fullTextHtml.replace(qEsc, `<mark class="codal-highlight">${qEsc}</mark>`);
+      }
 
       html += `<div class="codal-card">
         <div class="codal-header">
@@ -2210,23 +2114,26 @@ function renderDeepResults(data, query) {
           <div class="codal-source-name">${escHtml(law.source_short || law.source)}</div>
         </div>
         <div class="codal-title">${escHtml(law.title)}</div>
-        ${law.quoted_portion ? `<blockquote class="codal-quote">"${escHtml(law.quoted_portion)}"</blockquote>` : ''}
-        ${law.full_text ? `<div style="padding:0 18px 14px;font-family:var(--serif);font-size:13px;line-height:1.75;color:var(--ink-600);">${escHtml(law.full_text)}</div>` : ''}
-        ${law.court_interpretation ? `<div style="margin:0 18px 14px;padding:12px 14px;background:var(--teal-100);border-left:3px solid var(--teal-500);border-radius:0 6px 6px 0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal-500);margin-bottom:4px;">🏛 Judicial Interpretation</div>
-          <div style="font-family:var(--serif);font-size:13px;line-height:1.75;color:var(--teal-700);">${escHtml(law.court_interpretation)}</div>
-        </div>` : ''}
+        ${law.quoted_portion ? `<blockquote class="codal-quote">${escHtml(law.quoted_portion)}</blockquote>` : ''}
+        ${law.full_text ? `<div style="padding:0 18px 14px;font-family:var(--serif);font-size:13px;line-height:1.75;color:var(--ink-600)">${fullTextHtml}</div>` : ''}
         <div style="padding:0 18px 14px;display:flex;gap:12px;flex-wrap:wrap">
-          <a href="${sourceUrl}" target="_blank" rel="noopener" class="codal-source-link">📖 View on Lawphil ↗</a>
-          ${law.officialgazette_url ? `<a href="${law.officialgazette_url}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">📰 Official Gazette ↗</a>` : ''}
-          <a href="https://chanrobles.com/search?q=${encodeURIComponent((law.article_number||'')+' '+(law.source_short||''))}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">📋 ChanRobles ↗</a>
+          <a href="${sourceUrl}" target="_blank" rel="noopener" class="codal-source-link">
+            📖 View on Lawphil ↗
+          </a>
+          <a href="${ogUrl}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">
+            📰 Official Gazette ↗
+          </a>
+          <a href="https://chanrobles.com/search?q=${encodeURIComponent(law.article_number + ' ' + (law.source_short||''))}" target="_blank" rel="noopener" class="codal-source-link" style="color:var(--ink-600)">
+            📋 ChanRobles ↗
+          </a>
         </div>
       </div>`;
     });
+
     html += `</div>`;
   }
 
-  // ── SECTION 4: DOCTRINES ─────────────────────────────────
+  // ── SECTION 4: DOCTRINES ──
   if (data.doctrines?.length) {
     html += `
       <div class="result-section">
@@ -2234,26 +2141,11 @@ function renderDeepResults(data, query) {
           <div class="result-section-num">4</div>
           <div class="result-section-title">Legal Doctrines</div>
         </div>`;
-
     data.doctrines.forEach(d => {
       html += `<div class="doctrine-result-card">
         <div class="doctrine-result-name">${escHtml(d.doctrine_name)}</div>
         <div class="doctrine-result-desc">${escHtml(d.description)}</div>
-        ${d.elements?.length ? `<div style="margin:10px 0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-400);margin-bottom:6px;">Elements</div>
-          <ol style="margin-left:18px;display:flex;flex-direction:column;gap:4px;">
-            ${d.elements.map(el => `<li style="font-size:13px;color:var(--ink-600);font-family:var(--serif)">${escHtml(el)}</li>`).join('')}
-          </ol>
-        </div>` : ''}
-        ${d.court_interpretation ? `<div style="margin-top:10px;padding:10px 14px;background:var(--teal-100);border-left:3px solid var(--teal-500);border-radius:0 6px 6px 0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--teal-500);margin-bottom:4px;">🏛 Court's Interpretation</div>
-          <div style="font-size:13px;color:var(--teal-700);font-family:var(--serif);line-height:1.6;">${escHtml(d.court_interpretation)}</div>
-        </div>` : ''}
-        ${d.practical_application ? `<div style="margin-top:10px;padding:10px 14px;background:var(--gold-100);border-left:3px solid var(--gold-400);border-radius:0 6px 6px 0;">
-          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold-600);margin-bottom:4px;">⚖ Practical Application</div>
-          <div style="font-size:13px;color:var(--ink-800);font-family:var(--serif);line-height:1.6;">${escHtml(d.practical_application)}</div>
-        </div>` : ''}
-        <div class="doctrine-result-meta" style="margin-top:10px">
+        <div class="doctrine-result-meta">
           ${d.legal_basis ? `<span>📖 ${escHtml(d.legal_basis)}</span>` : ''}
           ${d.related_cases ? `<span>⚖ ${escHtml(d.related_cases)}</span>` : ''}
           ${d.category ? `<span class="cat-badge ${d.category}" style="font-size:10px">${escHtml(d.category)}</span>` : ''}
@@ -2263,7 +2155,7 @@ function renderDeepResults(data, query) {
     html += `</div>`;
   }
 
-  // ── SECTION 5: ANALYSIS ──────────────────────────────────
+  // ── SECTION 5: ANALYSIS ──
   if (data.analysis) {
     html += `
       <div class="result-section">
@@ -2275,45 +2167,53 @@ function renderDeepResults(data, query) {
       </div>`;
   }
 
-  // ── SECTION 6: WEB SOURCES ───────────────────────────────
+  // ── SECTION 6: WEB SOURCES ──
   html += `
     <div class="result-section">
       <div class="result-section-header">
         <div class="result-section-num">6</div>
-        <div class="result-section-title">Philippine Legal Sources — Search These Directly</div>
+        <div class="result-section-title">Philippine Legal Sources — Deep Index</div>
       </div>
       <div style="font-size:12px;color:var(--ink-400);margin-bottom:14px">
-        Click any source to search <strong>"${escHtml(query)}"</strong> on that platform — opens in new tab.
+        Click any source to search <strong>"${escHtml(query)}"</strong> directly on that platform — opens in new tab.
       </div>
       <div class="sources-mini-grid">`;
 
   PH_LEGAL_SOURCES.forEach(src => {
-    const webSrc = (data.web_sources || []).find(w => w.source_id === src.id || w.name?.includes(src.name));
-    const targetUrl = webSrc?.direct_url || src.searchTpl(query);
+    const webSrc = (data.web_sources || data.webSources || []).find(w => w.source_id === src.id || w.source === src.id);
+    const targetUrl = webSrc?.direct_url || webSrc?.directUrl || src.searchTpl(query);
     const relevance = webSrc?.relevance || src.desc;
     html += `<a href="${targetUrl}" target="_blank" rel="noopener" class="source-mini-card">
       <div class="source-mini-icon">${src.icon}</div>
       <div class="source-mini-body">
         <div class="source-mini-name">${escHtml(src.name)}</div>
-        <div class="source-mini-desc">${escHtml(relevance)}</div>
+        <div class="source-mini-desc" title="${escHtml(relevance)}">${escHtml(relevance)}</div>
       </div>
       <div class="source-mini-arrow">↗</div>
     </a>`;
   });
 
   html += `</div></div>`;
-  html += `</div>`; // close result-document
+
+  // ── DISCLAIMER ──
+  html += `
+    <div class="result-section" style="background:var(--ink-50)">
+      <div style="font-size:12px;color:var(--ink-400);line-height:1.7;font-family:var(--serif);font-style:italic">
+        ⚠ This research output is generated for academic and informational purposes only and does not constitute legal advice.
+        All cited provisions and jurisprudence are sourced from official Philippine legal databases.
+        For specific legal matters, consult a duly licensed Philippine attorney.
+      </div>
+    </div>`;
+
+  html += `</div>`; // close .result-document
 
   wrap.innerHTML = html;
+  wrap.scrollTop = 0;
 }
 
 function showPaywall() {
-  showToast('Subscribe to Pro to access full source links.', 'error');
+  showToast('Subscribe to Pro to access full case titles and source links.', 'error');
 }
-
-// Legacy aliases
-function renderResults(data, query) { renderDeepResults(data, query); }
-
 
 // Legacy aliases
 function renderResults(data, query) { renderDeepResults(data, query); }
