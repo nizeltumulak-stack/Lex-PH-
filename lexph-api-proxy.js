@@ -13,18 +13,28 @@ const rateLimitMap = new Map();
 const RATE_LIMIT_REQUESTS = 20;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-const corsHeaders = (origin, allowedOrigin) => ({
-  'Access-Control-Allow-Origin': origin === allowedOrigin || origin?.includes('localhost') ? origin : allowedOrigin || '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Max-Age': '86400',
-});
+const ALLOWED_ORIGINS = [
+  'https://lex-ph.netlify.app',
+  'https://lex-ph-backend.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5000',
+];
+
+const corsHeaders = (origin) => {
+  const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin?.includes('localhost');
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : ALLOWED_ORIGINS[0] || '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Allow-Credentials': 'true',
+  };
+};
 
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
-    const allowedOrigin = env.ALLOWED_ORIGIN || '*';
-    const headers = corsHeaders(origin, allowedOrigin);
+    const headers = corsHeaders(origin);
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers });

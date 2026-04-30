@@ -1,40 +1,50 @@
-#!/usr/bin/env node
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-const readline = require('readline');
-const { analyzeLexph } = require('./lexphService.js');
+const ALLOWED_ORIGINS = [
+  'https://lex-ph.netlify.app',
+  'https://lex-ph-backend.onrender.com',
+  'https://lexph-api-proxy.nizeltumulak.workers.dev',
+  'http://localhost:3000',
+  'http://localhost:5000',
+];
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-console.log('🚀 LexPH CLI - Philippine Legal Research AI');
-console.log('=======================================');
-console.log('Enter legal queries (type "exit" to quit):\n');
-
-async function prompt() {
-  rl.question('💼 ', async (query) => {
-    if (query.toLowerCase() === 'exit') {
-      console.log('👋 Goodbye!');
-      rl.close();
-      return;
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
     }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
 
-    if (!query.trim()) {
-      prompt();
-      return;
-    }
+const app = express();
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(express.json());
 
-    try {
-      console.log('\n⏳ Processing...\n');
-      const result = await analyzeLexph(query);
-      console.log(result);
-      console.log('\n' + '='.repeat(60) + '\n');
-    } catch (err) {
-      console.error('❌ Error:', err.message);
-    }
-    prompt();
-  });
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
+app.use(express.static('../'));
+
+app.get('/', (req, res) => res.send('LexPH Backend - Ready!'));
+
+let mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/lex_ph';
+if (mongoUri.includes('<db_password>')) {
+  console.log('MongoDB URI contains placeholder; falling back to localhost');
+  mongoUri = 'mongodb://localhost:27017/lex_ph';
 }
+console.log('Mongo URI:', mongoUri.includes('localhost') ? 'Localhost' : 'Atlas');
+mongoose.connect(mongoUri)
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB error:', err));
 
-prompt();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server on port ${PORT}`));

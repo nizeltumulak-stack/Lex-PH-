@@ -3,8 +3,25 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const ALLOWED_ORIGINS = [
+  'https://lex-ph.netlify.app',
+  'https://lex-ph-backend.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5000',
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin?.includes('localhost');
+    callback(null, isAllowed || ALLOWED_ORIGINS[0]);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Auth Routes
