@@ -2373,22 +2373,11 @@ async function callAI(userMsg, maxTokens) {
   const res = await fetch(PROXY_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gemini-2.0-flash',
-      max_tokens: maxTokens || 4000,
-      system: `You are a Philippine legal research engine. Respond ONLY with a valid JSON object starting with { and ending with }. No markdown, no code blocks, no explanation.`,
-      messages: [{ role: 'user', content: userMsg }],
-    }),
+    body: JSON.stringify({ query: userMsg }),
   });
   if (!res.ok) throw new Error(`Search service error: ${res.statusText || res.status}`);
   const data = await res.json();
-  const raw = (data.content?.find(b => b.type === 'text')?.text) || '';
-  const s = raw.indexOf('{');
-  const e = raw.lastIndexOf('}');
-  if (s === -1 || e === -1) throw new Error('AI returned invalid format. Please try again.');
-  let clean = raw.slice(s, e + 1).replace(/,(\s*[}\]])/g, '$1');
-  try { return JSON.parse(clean); }
-  catch(err) { throw new Error('AI returned invalid format. Please try again.'); }
+  return data.result;
 }
 
 async function runDeepSearch(query) {
