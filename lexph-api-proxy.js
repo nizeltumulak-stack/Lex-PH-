@@ -1,18 +1,13 @@
 /**
- * LexPH — Cloudflare Worker: API Proxy + Web Scraper
+ * LexPH — Cloudflare Worker: API Proxy (Groq)
  * ─────────────────────────────────────────────────────────────
  * ENVIRONMENT VARIABLES:
- *   GEMINI_API_KEY  → your Google Gemini API key (Secret)
+ *   GEMINI_API_KEY  → your Groq API key (Secret)
  *   ALLOWED_ORIGIN  → https://lex-ph.netlify.app (Plain text)
- *
- * ENDPOINTS:
- *   POST /          → AI chat (Gemini)
- *   POST /scrape    → Scrape a URL and return text content
- *   POST /search    → Full deep search pipeline
- * ─────────────────────────────────────────────────────────────
  */
 
-const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 const rateLimitMap = new Map();
 const RATE_LIMIT_REQUESTS = 20;
@@ -41,6 +36,14 @@ export default {
       });
     }
 
+    // Check API key is configured
+    const apiKey = env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API key not configured in Worker environment' }), {
+        status: 500, headers: { 'Content-Type': 'application/json', ...headers },
+      });
+    }
+
     const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
     if (!checkRateLimit(ip)) {
       return new Response(JSON.stringify({ error: 'Too many requests. Please wait.' }), {
@@ -63,19 +66,11 @@ export default {
         });
       }
 
-      // Only allow known PH legal sources
       const allowedDomains = [
-        'elibrary.judiciary.gov.ph',
-        'sc.judiciary.gov.ph',
-        'lawphil.net',
-        'chanrobles.com',
-        'officialgazette.gov.ph',
-        'senate.gov.ph',
-        'congress.gov.ph',
-        'projectjurisprudence.com',
-        'bir.gov.ph',
-        'dole.gov.ph',
-        'denr.gov.ph',
+        'elibrary.judiciary.gov.ph', 'sc.judiciary.gov.ph', 'lawphil.net',
+        'chanrobles.com', 'officialgazette.gov.ph', 'senate.gov.ph',
+        'congress.gov.ph', 'projectjurisprudence.com', 'bir.gov.ph',
+        'dole.gov.ph', 'denr.gov.ph',
       ];
 
       const isAllowed = allowedDomains.some(d => targetUrl.includes(d));
@@ -95,8 +90,6 @@ export default {
         });
 
         const html = await scrapeRes.text();
-
-        // Extract clean text from HTML
         const cleanText = html
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -106,7 +99,7 @@ export default {
           .replace(/<[^>]+>/g, ' ')
           .replace(/\s+/g, ' ')
           .trim()
-          .slice(0, 8000); // Limit to 8000 chars
+          .slice(0, 8000);
 
         return new Response(JSON.stringify({ success: true, url: targetUrl, content: cleanText }), {
           headers: { 'Content-Type': 'application/json', ...headers },
@@ -129,49 +122,61 @@ export default {
     const messages = body.messages || [];
     const systemPrompt = body.system || '';
 
-    const contents = messages.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    }));
+    const groqMessages = [];
+    if (systemPrompt) {
+      groqMessages.push({ role: 'system', content: systemPrompt });
+    }
+    for (const msg of messages) {
+      groqMessages.push({ role: msg.role === 'assistant' ? 'assistant' : 'user', content: msg.content });
+    }
 
-    const geminiBody = {
-      system_instruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
-      contents,
-      generationConfig: {
-        maxOutputTokens: Math.min(body.max_tokens || 2000, 8192),
-        temperature: 0.3,
-      },
+    const groqBody = {
+      model: GROQ_MODEL,
+      messages: groqMessages,
+      max_tokens: Math.min(body.max_tokens || 2000, 8000),
+      temperature: 0.3,
     };
 
-    let geminiRes;
+    let groqRes;
     try {
-      geminiRes = await fetch(`${GEMINI_API}?key=${env.GEMINI_API_KEY}`, {
+      groqRes = await fetch(GROQ_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(groqBody),
       });
     } catch (err) {
-      return new Response(JSON.stringify({ error: 'Failed to reach Gemini API', detail: err.message }), {
+      return new Response(JSON.stringify({ error: 'Failed to reach Groq API', detail: err.message }), {
         status: 502, headers: { 'Content-Type': 'application/json', ...headers },
       });
     }
 
-    const geminiData = await geminiRes.json();
-
-    let responseText = '';
-    try {
-      responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    } catch {
-      responseText = 'Sorry, I could not process your request.';
+    if (!groqRes.ok) {
+      let errDetail = {};
+      try { errDetail = await groqRes.json(); } catch {}
+      const msg = errDetail?.error?.message || errDetail?.message || JSON.stringify(errDetail);
+      return new Response(JSON.stringify({ error: `Groq API error ${groqRes.status}: ${msg}` }), {
+        status: 502, headers: { 'Content-Type': 'application/json', ...headers },
+      });
     }
 
-    // Return in Anthropic-compatible format so frontend works unchanged
+    const groqData = await groqRes.json();
+    const responseText = groqData.choices?.[0]?.message?.content || '';
+
+    if (!responseText) {
+      return new Response(JSON.stringify({ error: 'Groq returned empty response' }), {
+        status: 422, headers: { 'Content-Type': 'application/json', ...headers },
+      });
+    }
+
     return new Response(JSON.stringify({
-      id: 'gemini-' + Date.now(),
+      id: 'groq-' + Date.now(),
       type: 'message',
       role: 'assistant',
       content: [{ type: 'text', text: responseText }],
-      model: 'gemini-2.0-flash',
+      model: GROQ_MODEL,
       stop_reason: 'end_turn',
     }), {
       headers: { 'Content-Type': 'application/json', ...headers },

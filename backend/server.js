@@ -14,8 +14,13 @@ app.use(express.static('../'));
 
 app.get('/', (req, res) => res.send('LexPH Backend - Ready!'));
 
-console.log('Mongo URI:', process.env.MONGODB_URI ? 'Set in .env (Atlas?)' : 'Default localhost');
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/lex_ph')
+let mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/lex_ph';
+if (mongoUri.includes('<db_password>')) {
+  console.log('MongoDB URI contains placeholder; falling back to localhost');
+  mongoUri = 'mongodb://localhost:27017/lex_ph';
+}
+console.log('Mongo URI:', mongoUri.includes('localhost') ? 'Localhost' : 'Atlas');
+mongoose.connect(mongoUri)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB error:', err));
 

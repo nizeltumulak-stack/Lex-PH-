@@ -7,8 +7,8 @@ const router = express.Router();
 
 // Mock users for dev (no Mongo)
 const MOCK_USERS = [
-  { _id: 'demo1', username: 'test', password: '$2a$10$K.ExampleHashForTest1234567890abcdef', email: 'test@example.com', subscription: 'free' }, // bcrypt.hashSync('test', 10)
-  { _id: 'demo2', username: 'admin', password: '$2a$10$ExampleHashForAdminPass123456789', email: 'admin@lexph.com', subscription: 'premium' } // 'adminpass'
+  { _id: 'demo1', username: 'test', password: '$2a$10$N87WoilLY0sFngNnVjAvdeLFMYeDjGI84F5QXYthjGNCWqw.wiRXe', email: 'test@example.com', subscription: 'free' }, // bcrypt.hashSync('test', 10)
+  { _id: 'demo2', username: 'admin', password: '$2a$10$dhEGp13fLBy5vxsaKjuUWuBV7rvmo7L1tvZqFt0KozBMXya8WjjFS', email: 'admin@lexph.com', subscription: 'premium' } // bcrypt.hashSync('adminpass', 10)
 ];
 
 // Helper
